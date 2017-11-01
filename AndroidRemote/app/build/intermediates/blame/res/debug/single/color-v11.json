@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "/home/tbiliyor/Desktop/BalanceRobotPi-master/AndroidRemote/app/build/intermediates/res/merged/debug/color-v11/abc_background_cache_hint_selector_material_dark.xml",
+        "source": "/home/tbiliyor/.android/build-cache/30ceb25f725e8b25e02f20ab339772c0bcdbbc09/output/res/color-v11/abc_background_cache_hint_selector_material_dark.xml"
+    },
+    {
+        "merged": "/home/tbiliyor/Desktop/BalanceRobotPi-master/AndroidRemote/app/build/intermediates/res/merged/debug/color-v11/abc_background_cache_hint_selector_material_light.xml",
+        "source": "/home/tbiliyor/.android/build-cache/30ceb25f725e8b25e02f20ab339772c0bcdbbc09/output/res/color-v11/abc_background_cache_hint_selector_material_light.xml"
+    }
+]

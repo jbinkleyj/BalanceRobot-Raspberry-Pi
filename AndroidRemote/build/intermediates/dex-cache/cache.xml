@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        is-multidex="true"
+        jar="/home/tbiliyor/Desktop/BalanceRobotPi-master/AndroidRemote/app/build/intermediates/incremental-runtime-classes/debug/instant-run.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.1"
+        sha1="3be78ebc2706b2e1fe2f12d5726887a92d6c183b">
+        <dex dex="/home/tbiliyor/Desktop/BalanceRobotPi-master/AndroidRemote/app/build/intermediates/transforms/dex/debug/folders/1000/10000/instant-run_f4120661170eca7a8e13020b0824924f80c44b1e/classes.dex" />
+    </item>
+    <item
+        is-multidex="true"
+        jar="/home/tbiliyor/Desktop/BalanceRobotPi-master/AndroidRemote/app/build/intermediates/incremental-classes/debug/instant-run-bootstrap.jar"
+        jumboMode="true"
+        optimize="true"
+        revision="26.0.1"
+        sha1="f62a1ae07d753a265c30c172f50591d998d3e4c1">
+        <dex dex="/home/tbiliyor/Desktop/BalanceRobotPi-master/AndroidRemote/app/build/intermediates/transforms/dex/debug/folders/1000/10000/instant-run-bootstrap_047a3c766e0d859ed8151ab8b3d1d1a0e938f3a1/classes.dex" />
+    </item>
+
+</items>
