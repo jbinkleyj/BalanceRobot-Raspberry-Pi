@@ -276,13 +276,10 @@ int calculateGyro()
           gyroXangle = kalAngleX;
         if (gyroYangle < -180 || gyroYangle > 180)
           gyroYangle = kalAngleY;
-
-        if(kalAngleX > 0)
-             Angle_MPU = 180.0 - kalAngleX;   //negative backward  positive forward
-        else  if(kalAngleX < 0)
-             Angle_MPU = -1 * (180.0 + kalAngleX);   //negative backward  positive forward
-
+       
+        Angle_MPU =  kalAngleX;   //negative backward  positive forward       
         Gyro_MPU = gyroXrate;
+      
         Temperature = (double)accelgyro.getTemperature() / 340.0 + 36.53;       
         //printf("Angle_MPU : %.2f  Gyro_MPU : %.2f\n",Angle_MPU,Gyro_MPU);
 
