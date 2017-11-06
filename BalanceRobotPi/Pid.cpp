@@ -2,10 +2,13 @@
 #include <sys/time.h>
 #include <stdio.h>
 
+/*Constructor (...)*********************************************************
+ *    The parameters specified here are those for for which we can't set up
+ *    reliable defaults, so we need to have the user set them.
+ ***************************************************************************/
 PID::PID(double* Input, double* Output, double* Setpoint,
-        double Kp, double Ki, double Kd, int ControllerDirection)
+        double Kp, double Ki, double Kd, int POn, int ControllerDirection)
 {
-
     myOutput = Output;
     myInput = Input;
     mySetpoint = Setpoint;
@@ -17,9 +20,21 @@ PID::PID(double* Input, double* Output, double* Setpoint,
     SampleTime = 100;							//default Controller Sample Time is 0.1 seconds
 
     PID::SetControllerDirection(ControllerDirection);
-    PID::SetTunings(Kp, Ki, Kd);
+    PID::SetTunings(Kp, Ki, Kd, POn);
 
     lastTime = millis()-SampleTime;
+}
+
+/*Constructor (...)*********************************************************
+ *    To allow backwards compatability for v1.1, or for people that just want
+ *    to use Proportional on Error without explicitly saying so
+ ***************************************************************************/
+
+PID::PID(double* Input, double* Output, double* Setpoint,
+        double Kp, double Ki, double Kd, int ControllerDirection)
+    :PID::PID(Input, Output, Setpoint, Kp, Ki, Kd, P_ON_E, ControllerDirection)
+{
+
 }
 
 unsigned int PID::millis()
@@ -30,10 +45,6 @@ unsigned int PID::millis()
     return (unsigned int)time_in_mill;
 }
 
-void PID::Setpoint(double* Setpoint)
-{
-  mySetpoint = Setpoint;
-}
 
 /* Compute() **********************************************************************
  *     This, as they say, is where the magic happens.  this function should be called
@@ -41,33 +52,41 @@ void PID::Setpoint(double* Setpoint)
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
-bool PID::Compute(int Speed_Need)
+bool PID::Compute()
 {
    if(!inAuto) return false;
    unsigned long now = millis();
    unsigned long timeChange = (now - lastTime);
-
    if(timeChange>=SampleTime)
    {
       /*Compute all the working error variables*/
-        double input = *myInput;
+      double input = *myInput;
       double error = *mySetpoint - input;
-      ITerm+= (ki * error);
-      if(ITerm > outMax) ITerm= outMax;
-      else if(ITerm < outMin) ITerm= outMin;
       double dInput = (input - lastInput);
+      outputSum+= (ki * error);
 
-      /*Compute PID Output*/
-      double output = kp * error +  ITerm - kd * dInput - Speed_Need;
+      /*Add Proportional on Measurement, if P_ON_M is specified*/
+      if(!pOnE) outputSum-= kp * dInput;
 
-      if(output > outMax) output = outMax;
+      if(outputSum > outMax) outputSum= outMax;
+      else if(outputSum < outMin) outputSum= outMin;
+
+      /*Add Proportional on Error, if P_ON_E is specified*/
+       double output;
+      if(pOnE) output = kp * error;
+      else output = 0;
+
+      /*Compute Rest of PID Output*/
+      output += outputSum - kd * dInput;
+
+        if(output > outMax) output = outMax;
       else if(output < outMin) output = outMin;
-      *myOutput = output;
+        *myOutput = output;
 
       /*Remember some variables for next time*/
       lastInput = input;
       lastTime = now;
-      return true;
+        return true;
    }
    else return false;
 }
@@ -77,9 +96,12 @@ bool PID::Compute(int Speed_Need)
  * it's called automatically from the constructor, but tunings can also
  * be adjusted on the fly during normal operation
  ******************************************************************************/
-void PID::SetTunings(double Kp, double Ki, double Kd)
+void PID::SetTunings(double Kp, double Ki, double Kd, int POn)
 {
    if (Kp<0 || Ki<0 || Kd<0) return;
+
+   pOn = POn;
+   pOnE = POn == P_ON_E;
 
    dispKp = Kp; dispKi = Ki; dispKd = Kd;
 
@@ -94,6 +116,13 @@ void PID::SetTunings(double Kp, double Ki, double Kd)
       ki = (0 - ki);
       kd = (0 - kd);
    }
+}
+
+/* SetTunings(...)*************************************************************
+ * Set Tunings using the last-rembered POn setting
+ ******************************************************************************/
+void PID::SetTunings(double Kp, double Ki, double Kd){
+    SetTunings(Kp, Ki, Kd, pOn);
 }
 
 /* SetSampleTime(...) *********************************************************
@@ -130,8 +159,8 @@ void PID::SetOutputLimits(double Min, double Max)
        if(*myOutput > outMax) *myOutput = outMax;
        else if(*myOutput < outMin) *myOutput = outMin;
 
-       if(ITerm > outMax) ITerm= outMax;
-       else if(ITerm < outMin) ITerm= outMin;
+       if(outputSum > outMax) outputSum= outMax;
+       else if(outputSum < outMin) outputSum= outMin;
    }
 }
 
@@ -156,10 +185,10 @@ void PID::SetMode(int Mode)
  ******************************************************************************/
 void PID::Initialize()
 {
-   ITerm = *myOutput;
+   outputSum = *myOutput;
    lastInput = *myInput;
-   if(ITerm > outMax) ITerm = outMax;
-   else if(ITerm < outMin) ITerm = outMin;
+   if(outputSum > outMax) outputSum = outMax;
+   else if(outputSum < outMin) outputSum = outMin;
 }
 
 /* SetControllerDirection(...)*************************************************
@@ -172,7 +201,7 @@ void PID::SetControllerDirection(int Direction)
 {
    if(inAuto && Direction !=controllerDirection)
    {
-      kp = (0 - kp);
+        kp = (0 - kp);
       ki = (0 - ki);
       kd = (0 - kd);
    }
