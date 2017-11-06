@@ -135,8 +135,8 @@ Kalman kalmanX;
 Kalman kalmanY;
 
 double Setpoint = 0.0;
-double aggKp = 200.0;
-double aggKi = 550.0;
+double aggKp = 190.0;
+double aggKi = 425.0;
 double aggKd = 2.0;
 
 double Input, Output;
@@ -295,10 +295,6 @@ void PWM_Calculate()
 
   Input = Angle_MPU;
 
-  Setpoint = Correction;
-
-  balancePID.Setpoint(&Setpoint);
-
   double gap = abs(Setpoint - Input); //distance away from setpoint
 
   if (gap < 10)
@@ -310,27 +306,12 @@ void PWM_Calculate()
      balancePID.SetTunings(aggKp, aggKi, aggKd);
   }
 
-  balancePID.Compute(2.5 * Speed_Need);
+  balancePID.Compute();
 
   mSpeed = -constrain((int)Output,-pwnLimit,pwnLimit);
 
-  if((Speed_Need != 0) && (Turn_Need == 0))
-  {
-    if(StopFlag == true)
-    {
-      Speed_Diff_ALL = 0;
-      StopFlag = false;
-    }
-    pwm_r = constrain(int(mSpeed - Turn_Need - Speed_Diff_ALL),-pwnLimit,pwnLimit);
-    pwm_l = constrain(int(mSpeed + Turn_Need + Speed_Diff_ALL ),-pwnLimit,pwnLimit);
-
-  }
-  else
-  {
-    StopFlag = true;
-    pwm_r = constrain(int(mSpeed - Turn_Need ),-pwnLimit,pwnLimit);
-    pwm_l = constrain(int(mSpeed + Turn_Need ),-pwnLimit,pwnLimit);
-  }
+  pwm_r = constrain(int(mSpeed - Turn_Need - Speed_Diff_ALL),-pwnLimit,pwnLimit);
+  pwm_l = constrain(int(mSpeed + Turn_Need + Speed_Diff_ALL ),-pwnLimit,pwnLimit);
 
   Speed_L = 0;
   Speed_R = 0;
@@ -381,6 +362,8 @@ void encodeL (void)
         Speed_L += 1;
     else
         Speed_L -= 1;
+
+    printf("Speed_L : %d \n",Speed_L);
 }
 
 void encodeR (void)
@@ -389,6 +372,8 @@ void encodeR (void)
         Speed_R += 1;
     else
         Speed_R -= 1;
+
+    printf("Speed_R : %d \n",Speed_R);
 }
 
 uchar *trim(uchar *s)
@@ -445,7 +430,7 @@ void updateConfigurationFileFromStatus() {
 void createConfigurationFile() {
     boost::property_tree::ptree pt;
 
-     printf("aggKp: %.1f aggKi: %.1f aggKd: %.1f\n",aggKp,aggKi,aggKd);
+    printf("aggKp: %.1f aggKi: %.1f aggKd: %.1f\n",aggKp,aggKi,aggKd);
 
     //create with default parameters
     pt.put("Robot.aggKp", aggKp);
@@ -869,7 +854,7 @@ void init()
     balancePID.SetSampleTime(SAMPLE_TIME);
     balancePID.SetOutputLimits(-pwnLimit, pwnLimit);
 
-    /*bool rfcomm_connected = false;
+    bool rfcomm_connected = false;
     printf("\nTrying to connect rfcomm port...\n");
 
     if(!connetRfComm())
@@ -898,10 +883,12 @@ void init()
     {
         m_IsSerialThreadRunning = true;
         boost::thread* tserial = new boost::thread(checkSerialThread);
-    }*/
+    }
 
     m_IsMainThreadRunning = true;
     boost::thread* tmain = new boost::thread(checkMainThread);
+
+    initConf();
     timer = micros();
 }
 
@@ -916,8 +903,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        init();
-        initConf();
+        init();       
     }
 
     return a.exec();
