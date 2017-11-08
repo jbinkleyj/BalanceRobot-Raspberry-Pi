@@ -43,16 +43,16 @@ public class PIDSet {
 		textView_KD = paramView.findViewById(R.id.textView_KD);
 
 		seekBar_KP = paramView.findViewById(R.id.seekBar_KP);
-		seekBar_KP.setMax(500);
+		seekBar_KP.setMax(100);
 		seekBar_KP.setProgress((int)MainActivity.getKP());
 
 		seekBar_KI = paramView.findViewById(R.id.seekBar_KI);
-		seekBar_KI.setMax(500);
+		seekBar_KI.setMax(100);
 		seekBar_KI.setProgress((int)MainActivity.getKI());
 
 		seekBar_KD = paramView.findViewById(R.id.seekBar_KD);
 		seekBar_KD.setMax(100);
-		seekBar_KD.setProgress((int)MainActivity.getKD() * 5);
+		seekBar_KD.setProgress((int)MainActivity.getKD());
 
 
 		float KP =(float) seekBar_KP.getProgress();
@@ -63,7 +63,7 @@ public class PIDSet {
 		String sKI = Float.toString(KI);
 		textView_KI.setText("KI = " + sKI);
 
-		float KD =(float) seekBar_KD.getProgress() / 5;
+		float KD =(float) seekBar_KD.getProgress() / 10;
 		String sKD = Float.toString(KD);
 		textView_KD.setText("KD = " + sKD);
 
@@ -120,7 +120,7 @@ public class PIDSet {
 			@Override
 			public void onProgressChanged(SeekBar seekBar, int progress,
                                           boolean fromUser) {
-				float KD =(float) seekBar_KD.getProgress() / 5;
+				float KD =(float) seekBar_KD.getProgress() / 10;
 				MainActivity.setKD(KD);
 				String sKD = Float.toString(KD);
 				textView_KD.setText("KD = " + sKD);
