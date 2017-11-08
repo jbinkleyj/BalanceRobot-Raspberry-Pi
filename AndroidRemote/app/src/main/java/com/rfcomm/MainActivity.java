@@ -57,9 +57,9 @@ public class MainActivity extends ActionBarActivity
 	byte[] commandPacket = new byte[11];
 	static byte[] commandPacketBlueTooth = new byte[6];
 
-	public static int Kp = 0;
-	public static int Ki = 0;
-	public static int Kd = 0;
+	public static float Kp = 0;
+	public static float Ki = 0;
+	public static float Kd = 0;
 
 	private int speed1;
 	private int speed2;
@@ -670,9 +670,9 @@ public class MainActivity extends ActionBarActivity
 			}
 
 
-			Kp = Math.round(Float.valueOf(KP.replace(",",".")));
-			Ki = Math.round(Float.valueOf(KI.replace(",",".")));
-			Kd = Math.round(Float.valueOf(KD.replace(",",".")) * 5);
+			Kp = Float.valueOf(KP.replace(",","."));
+			Ki = Float.valueOf(KI.replace(",","."));
+			Kd = Float.valueOf(KD.replace(",","."));
 
 			//Log.e(TAG,"KP : " + Kp + "  KI : " + Ki + "  Kd : " + Kd );
 
@@ -691,16 +691,16 @@ public class MainActivity extends ActionBarActivity
 		mConversationArrayAdapter.add("Read:  " + tmpmsg);
 	}
 
-	public static int getKP() {
+	public static float getKP() {
 		return Kp;
 	}
 
-	public static void setKP(int KP) {
+	public static void setKP(float KP) {
 
 		Kp = KP;
 		commandPacketBlueTooth[1] = 0x02;
 		commandPacketBlueTooth[2] = 0x01;
-		int ikp = KP*100;
+		float ikp = KP*100;
 		commandPacketBlueTooth[3] = (byte)(ikp / 255);
 		commandPacketBlueTooth[4] = (byte)(ikp % 255);
 		//commandPacketBlueTooth[4] = 0x03;
@@ -709,16 +709,16 @@ public class MainActivity extends ActionBarActivity
 			mBtService.sendCmd(commandPacketBlueTooth);
 	}
 
-	public static int getKI() {
+	public static float getKI() {
 		return Ki;
 	}
 
-	public static void setKI(int KI) {
+	public static void setKI(float KI) {
 
 		Ki = KI;
 		commandPacketBlueTooth[1] = 0x02;
 		commandPacketBlueTooth[2] = 0x02;
-		int iki = KI*100;
+		float iki = KI*100;
 		commandPacketBlueTooth[3] = (byte)(iki / 255);
 		commandPacketBlueTooth[4] = (byte)(iki % 255);
 		//commandPacketBlueTooth[4] = 0x03;
@@ -727,16 +727,16 @@ public class MainActivity extends ActionBarActivity
 			mBtService.sendCmd(commandPacketBlueTooth);
 	}
 
-	public static int getKD() {
+	public static float getKD() {
 		return Kd;
 	}
 
-	public static void setKD(int KD) {
+	public static void setKD(float KD) {
 
 		Kd = KD;
 		commandPacketBlueTooth[1] = 0x02;
 		commandPacketBlueTooth[2] = 0x03;
-		int ikd = KD*20;
+		float ikd = KD * 100;
 		commandPacketBlueTooth[3] = (byte)(ikd / 255);
 		commandPacketBlueTooth[4] = (byte)(ikd % 255);
 		//commandPacketBlueTooth[4] = 0x03;
