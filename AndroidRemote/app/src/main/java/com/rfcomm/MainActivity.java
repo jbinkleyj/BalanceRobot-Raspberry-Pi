@@ -109,7 +109,7 @@ public class MainActivity extends ActionBarActivity
 							break;
 						case BluetoothService.STATE_LISTEN:
 							statusText.setText(getString(R.string.title_listening));
-							StartStop.setText("Start");
+							StartStop.setText("Stop");
 							break;
 						case BluetoothService.STATE_NONE:
 							statusText.setText(getString(R.string.title_not_connected));
@@ -700,7 +700,7 @@ public class MainActivity extends ActionBarActivity
 		Kp = KP;
 		commandPacketBlueTooth[1] = 0x02;
 		commandPacketBlueTooth[2] = 0x01;
-		float ikp = KP*100;
+		float ikp = KP * 100;
 		commandPacketBlueTooth[3] = (byte)(ikp / 255);
 		commandPacketBlueTooth[4] = (byte)(ikp % 255);
 		//commandPacketBlueTooth[4] = 0x03;
@@ -718,7 +718,7 @@ public class MainActivity extends ActionBarActivity
 		Ki = KI;
 		commandPacketBlueTooth[1] = 0x02;
 		commandPacketBlueTooth[2] = 0x02;
-		float iki = KI*100;
+		float iki = KI * 100;
 		commandPacketBlueTooth[3] = (byte)(iki / 255);
 		commandPacketBlueTooth[4] = (byte)(iki % 255);
 		//commandPacketBlueTooth[4] = 0x03;
@@ -728,7 +728,7 @@ public class MainActivity extends ActionBarActivity
 	}
 
 	public static float getKD() {
-		return Kd;
+		return Kd * 10;
 	}
 
 	public static void setKD(float KD) {
