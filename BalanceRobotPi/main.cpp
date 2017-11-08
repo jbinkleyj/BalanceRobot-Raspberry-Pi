@@ -31,7 +31,6 @@
 #include <bluetooth/sdp_lib.h>
 #include <bluetooth/rfcomm.h>
 
-
 //sudo apt-get install libbluetooth-dev
 
 static const unsigned int SLEEP_PERIOD = 1000;
@@ -44,25 +43,48 @@ static const unsigned int SLEEP_COUNTER= 100;
 #define	COUNT_KEY	0
 #define	DEBOUNCE_TIME	100
 
-//motor  define L298P
-#define PWM_L 1  //M1 ENA Phys:12
-#define PWM_R 23 //M2 ENB Phys:33
+//RPi Motor Driver Board
+#define PWM_R 25  //PWMA
+#define PWM_L 26  //PWMB
 
-#define DIR_L1 0 //IN2 Phys:11
-#define DIR_L2 2 //IN1 Phys:13
-#define DIR_R1 3 //IN4 Phys:15
-#define DIR_R2 6 //IN3 Phys:22
+#define DIR_R1 28 //M1
+#define DIR_R2 29 //M2
+#define DIR_L1 22 //M3
+#define DIR_L2 23 //M4
 
 //encoder define
-#define SPD_INT_R 24   //interrupt R Phys:35
+#define SPD_INT_R 1   //interrupt R Phys:12
 #define SPD_PUL_R 4    //Phys:16
-#define SPD_INT_L 25   //interrupt L Phys:37
-#define SPD_PUL_L 5    //Phys:18
+#define SPD_INT_L 5   //interrupt L Phys:18
+#define SPD_PUL_L 6    //Phys:22
 
-/*Set IN1 low, IN2 low to stop.
-Set IN1 high, IN2 low to go clockwise.
-Set IN1 low, IN2 high to go counter clockwise.
-Set IN1 high, IN2 high to brake.*/
+/*
+RPi Motor Driver Board, DC Motor Wiring instructions:
+
+Dc Motor:
+Brown: Motor line +
+Black: Encoder ground
+White: Encoder output B phase
+Green: Encoder output A phase
+Red: Encoder power supply
+Yellow: Motor line -
+
+Pi Expansion Board:
+Interface 	wiringPi 	BCM
+M1              P28         20
+M2              P29         21
+PWMA            P25         26
+M3              P22         6
+M4              P23         13
+PWMB            P26         12
+
+M1 	M2 	M3 	M4 	Descriptions
+1 	0 	1 	0 	When the motors rotate forwards, the robot goes straight
+0 	1 	0 	1 	When the motors rotate backwards, the robot draws back
+0 	0 	1 	0 	When the right motor stops and left motor rotates forwards, the robot turns right
+1 	0 	0 	0 	When the left motor stops and right motor rotates forwards, the robot turns left
+0 	0 	0 	0 	When the motors stop, the robot stops
+*/
 
 boost::atomic_bool m_IsMainThreadRunning,m_IsSerialThreadRunning;
 boost::shared_ptr<boost::thread> m_MainThreadInstance,m_SerialThreadInstance;
@@ -113,7 +135,7 @@ double RAD_TO_DEG = 57.2958;
 
 int Speed_L,Speed_R;
 int mSpeed,pwm_l,pwm_r;
-int period = 10; //loop period in ms
+unsigned int period = 10; //loop period in ms
 int pwnLimit = 1000;
 
 int Speed_Need = 0;
@@ -280,8 +302,7 @@ int calculateGyro()
         Angle_MPU =  kalAngleX;   //negative backward  positive forward       
         Gyro_MPU = gyroXrate;
       
-        Temperature = (double)accelgyro.getTemperature() / 340.0 + 36.53;       
-        //printf("Angle_MPU : %.2f  Gyro_MPU : %.2f\n",Angle_MPU,Gyro_MPU);
+        Temperature = (double)accelgyro.getTemperature() / 340.0 + 36.53;
 
         return 1;
     }
@@ -313,47 +334,55 @@ void PWM_Calculate()
   pwm_r = constrain(int(mSpeed - Turn_Need - Speed_Diff_ALL),-pwnLimit,pwnLimit);
   pwm_l = constrain(int(mSpeed + Turn_Need + Speed_Diff_ALL ),-pwnLimit,pwnLimit);
 
+  printf("Angle_MPU : %.2f  pwm_r : %d  pwm_l : %d\n",Angle_MPU,pwm_r,pwm_l);
+
   Speed_L = 0;
   Speed_R = 0;
 }
 
 void Robot_Control()
 {
- if (pwm_l>0)
-  {
-    digitalWrite(DIR_L1, LOW);
-    digitalWrite(DIR_L2, HIGH);
-  }
-  if (pwm_l<0)
-  {
-    digitalWrite(DIR_L1, HIGH);
-    digitalWrite(DIR_L2, LOW);
-    pwm_l =- pwm_l;  //cchange to positive
-  }
+   /* M1 	M2 	M3 	M4 	Descriptions
+    1 	0 	1 	0 	When the motors rotate forwards, the robot goes straight
+    0 	1 	0 	1 	When the motors rotate backwards, the robot draws back
+    0 	0 	1 	0 	When the right motor stops and left motor rotates forwards, the robot turns right
+    1 	0 	0 	0 	When the left motor stops and right motor rotates forwards, the robot turns left
+    0 	0 	0 	0 	When the motors stop, the robot stops*/
 
-  if (pwm_r>0)
-  {
+    if (pwm_r>0)
+    {
     digitalWrite(DIR_R1, HIGH);
     digitalWrite(DIR_R2, LOW);
-  }
-  if (pwm_r<0)
-  {
+    }
+
+    if (pwm_l>0)
+    {
+    digitalWrite(DIR_L1, HIGH);
+    digitalWrite(DIR_L2, LOW);
+    }
+
+    if (pwm_r<0)
+    {
     digitalWrite(DIR_R1, LOW);
     digitalWrite(DIR_R2, HIGH);
-    pwm_r = -pwm_r;
-  }
+    pwm_l =- pwm_l;  //cchange to positive
+    }
 
-  if( Angle_MPU > 45 || Angle_MPU < -45 )
-  {
+    if (pwm_l<0)
+    {
+    digitalWrite(DIR_L1, LOW);
+    digitalWrite(DIR_L2, HIGH);
+    pwm_r = -pwm_r;
+    }
+
+    if( Angle_MPU > 45 || Angle_MPU < -45 )
+    {
     pwm_l = 0;
     pwm_r = 0;
-  }
+    }
 
-  pwmWrite(PWM_L, pwm_l);
-  pwmWrite(PWM_R, pwm_r);
-
-  //printf("pwm_l : %d  pwm_r : %d  Angle_Mpu : %.2f  Peirod(%.0f)\n",pwm_l,pwm_r,Angle_MPU,timediff);
-
+    pwmWrite(PWM_L, pwm_l);
+    pwmWrite(PWM_R, pwm_r);
 }
 
 void encodeL (void)
@@ -655,6 +684,7 @@ void checkSerialThread()
         {
             sprintf(buf, "Data:%d:%d:%0.2f:%d:%d:%d:%d:%0.2f:%0.2f:%0.2f:%0.2f:%d:%0.2f",
             pwm_l, pwm_r,Angle_MPU,Speed_Need,Turn_Need,Speed_L,Speed_R,aggKp,aggKi,aggKd,Temperature,Position_AVG,Correction);
+            //printf("%s\n",buf);
             sendData(buf,strlen(buf));
         }
 
@@ -883,10 +913,12 @@ void init()
     {
         m_IsSerialThreadRunning = true;
         boost::thread* tserial = new boost::thread(checkSerialThread);
+        (void)tserial;
     }
 
     m_IsMainThreadRunning = true;
     boost::thread* tmain = new boost::thread(checkMainThread);
+    (void)tmain;
 
     initConf();
     timer = micros();
