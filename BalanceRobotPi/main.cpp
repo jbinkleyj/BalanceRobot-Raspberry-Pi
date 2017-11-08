@@ -156,10 +156,10 @@ double timediff = 0.0;
 Kalman kalmanX;
 Kalman kalmanY;
 
-double Setpoint = 0.0;
-double aggKp = 190.0;
-double aggKi = 425.0;
-double aggKd = 2.0;
+double Setpoint;
+double aggKp;
+double aggKi;
+double aggKd;
 
 double Input, Output;
 //Specify the links and initial tuning parameters
@@ -181,6 +181,26 @@ unsigned int micros()
     gettimeofday(&timer, NULL);
     unsigned int time_in_micros = 1000000 * timer.tv_sec + timer.tv_usec;
     return time_in_micros;
+}
+
+void ResetValues()
+{
+    Setpoint = 0.0;
+    Speed_Diff = 0;
+    Speed_Diff_ALL = 0;
+    Position_AVG = 0;
+    Input = 0.0;
+    Angle_MPU = 0.0;
+    Gyro_MPU = 0.0;
+    Temperature = 0.0;
+    Speed_Need = 0;
+    Turn_Need = 0;
+    Correction = 0.0;
+    Speed_L = 0;
+    Speed_R = 0;
+    mSpeed = 0;
+    pwm_l = 0;
+    pwm_r = 0;
 }
 
 bool connetRfComm()
@@ -300,9 +320,9 @@ int calculateGyro()
           gyroYangle = kalAngleY;
        
         Angle_MPU =  kalAngleX;   //negative backward  positive forward       
-        Gyro_MPU = gyroXrate;
-      
+        Gyro_MPU = gyroXrate;      
         Temperature = (double)accelgyro.getTemperature() / 340.0 + 36.53;
+        //printf("Angle_MPU : %.2f\n",Angle_MPU);
 
         return 1;
     }
@@ -311,30 +331,21 @@ int calculateGyro()
 
 void PWM_Calculate()
 {
-  Speed_Diff = Speed_L - Speed_R;
-  Speed_Diff_ALL += Speed_Diff;
+  //Speed_Diff = Speed_L - Speed_R;
+  //Speed_Diff_ALL += Speed_Diff;
 
   Input = Angle_MPU;
 
   double gap = abs(Setpoint - Input); //distance away from setpoint
 
-  if (gap < 10)
-  {  //we're close to setpoint, use conservative tuning parameters
-     balancePID.SetTunings(aggKp/3, aggKi/3, aggKd/3);
-  }
-  else
-  {     //we're far from setpoint, use aggressive tuning parameters
-     balancePID.SetTunings(aggKp, aggKi, aggKd);
-  }
+  balancePID.SetTunings(aggKp, aggKi, aggKd);
 
   balancePID.Compute();
 
   mSpeed = -constrain((int)Output,-pwnLimit,pwnLimit);
 
-  pwm_r = constrain(int(mSpeed - Turn_Need - Speed_Diff_ALL),-pwnLimit,pwnLimit);
-  pwm_l = constrain(int(mSpeed + Turn_Need + Speed_Diff_ALL ),-pwnLimit,pwnLimit);
-
-  printf("Angle_MPU : %.2f  pwm_r : %d  pwm_l : %d\n",Angle_MPU,pwm_r,pwm_l);
+  pwm_r = constrain(int(mSpeed - Turn_Need),-pwnLimit,pwnLimit);
+  pwm_l = constrain(int(mSpeed + Turn_Need),-pwnLimit,pwnLimit);
 
   Speed_L = 0;
   Speed_R = 0;
@@ -457,7 +468,11 @@ void updateConfigurationFileFromStatus() {
 }
 
 void createConfigurationFile() {
-    boost::property_tree::ptree pt;
+    boost::property_tree::ptree pt;    
+
+    aggKp = 10.0;
+    aggKi = 40.0;
+    aggKd = 0.4;
 
     printf("aggKp: %.1f aggKi: %.1f aggKd: %.1f\n",aggKp,aggKi,aggKd);
 
@@ -506,29 +521,6 @@ bool sendData(char *data, unsigned int buf_size)
         return write(fd, data, buf_size);
     }
     else return -1;
-}
-
-void ResetValues()
-{
-    Speed_Diff = 0;
-    Speed_Diff_ALL = 0;
-    Position_AVG = 0;
-    StopFlag = true;
-    Input = 0.0;
-    Angle_MPU = 0.0;
-    Gyro_MPU = 0.0;
-    Temperature = 0.0;
-
-    Speed_Need = 0;
-    Turn_Need = 0;
-    Correction = 0.0;
-    Speed_L = 0;
-    Speed_R = 0;
-    mSpeed = 0;
-    pwm_l = 0;
-    pwm_r = 0;
-
-    updateConf();
 }
 
 void RobotDirection()
@@ -662,8 +654,10 @@ void checkMainThread()
 {
     while (m_IsMainThreadRunning)
     {
+        if(!m_IsRunning)
+            continue;
 
-        if(calculateGyro() && m_IsRunning)
+        if(calculateGyro())
         {
             PWM_Calculate();
             Robot_Control();
@@ -935,6 +929,7 @@ int main(int argc, char *argv[])
     }
     else
     {
+        ResetValues();
         init();       
     }
 
