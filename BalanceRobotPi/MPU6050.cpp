@@ -1722,6 +1722,9 @@ bool MPU6050::getIntDataReadyStatus() {
  */
 void MPU6050::getMotion9(int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz, int16_t* mx, int16_t* my, int16_t* mz) {
     getMotion6(ax, ay, az, gx, gy, gz);
+    (void)mx;
+    (void)my;
+    (void)mz;
     // TODO: magnetometer integration
 }
 /** Get raw 6-axis motion sensor readings (accel/gyro).
@@ -2972,7 +2975,7 @@ bool MPU6050::writeMemoryBlock(const uint8_t *data, uint16_t dataSize, uint8_t b
     setMemoryBank(bank);
     setMemoryStartAddress(address);
     uint8_t chunkSize;
-    uint8_t *verifyBuffer;
+    uint8_t *verifyBuffer = NULL;
     uint8_t *progBuffer = NULL; // Keep compiler quiet
     uint16_t i;
     uint8_t j;
