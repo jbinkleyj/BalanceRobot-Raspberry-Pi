@@ -44,15 +44,15 @@ public class PIDSet {
 
 		seekBar_KP = paramView.findViewById(R.id.seekBar_KP);
 		seekBar_KP.setMax(500);
-		seekBar_KP.setProgress(MainActivity.getKP());
+		seekBar_KP.setProgress((int)MainActivity.getKP());
 
 		seekBar_KI = paramView.findViewById(R.id.seekBar_KI);
 		seekBar_KI.setMax(500);
-		seekBar_KI.setProgress(MainActivity.getKI());
+		seekBar_KI.setProgress((int)MainActivity.getKI());
 
 		seekBar_KD = paramView.findViewById(R.id.seekBar_KD);
 		seekBar_KD.setMax(100);
-		seekBar_KD.setProgress(MainActivity.getKD());
+		seekBar_KD.setProgress((int)MainActivity.getKD() * 5);
 
 
 		float KP =(float) seekBar_KP.getProgress();
@@ -63,7 +63,7 @@ public class PIDSet {
 		String sKI = Float.toString(KI);
 		textView_KI.setText("KI = " + sKI);
 
-		float KD =(float) seekBar_KD.getProgress()  / 5;
+		float KD =(float) seekBar_KD.getProgress() / 5;
 		String sKD = Float.toString(KD);
 		textView_KD.setText("KD = " + sKD);
 
@@ -71,9 +71,8 @@ public class PIDSet {
 			@Override
 			public void onProgressChanged(SeekBar seekBar, int progress,
                                           boolean fromUser) {
-				//App.setKAngle(seekBar_KAngle.getProgress());
-				MainActivity.setKP(seekBar_KP.getProgress());
 				float KP =(float) seekBar_KP.getProgress();
+				MainActivity.setKP(KP);
 				String sKP = Float.toString(KP);
 				textView_KP.setText("KP = " + sKP);
 			}
@@ -97,8 +96,8 @@ public class PIDSet {
 			@Override
 			public void onProgressChanged(SeekBar seekBar, int progress,
                                           boolean fromUser) {
-				MainActivity.setKI(seekBar_KI.getProgress());
 				float KI =(float) seekBar_KI.getProgress();
+				MainActivity.setKI(KI);
 				String sKI = Float.toString(KI);
 				textView_KI.setText("KI = " + sKI);
 			}
@@ -121,8 +120,8 @@ public class PIDSet {
 			@Override
 			public void onProgressChanged(SeekBar seekBar, int progress,
                                           boolean fromUser) {
-				MainActivity.setKD(seekBar_KD.getProgress());
 				float KD =(float) seekBar_KD.getProgress() / 5;
+				MainActivity.setKD(KD);
 				String sKD = Float.toString(KD);
 				textView_KD.setText("KD = " + sKD);
 			}
