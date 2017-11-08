@@ -173,6 +173,7 @@ int8_t I2Cdev::readWord(uint8_t devAddr, uint8_t regAddr, uint16_t *data, uint16
  */
 int8_t I2Cdev::readBytes(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint8_t *data, uint16_t timeout) {
     int8_t count = 0;
+    (void)timeout;
     int fd = open(i2cPath, O_RDWR);
 
     if (fd < 0) {
@@ -213,6 +214,11 @@ int8_t I2Cdev::readBytes(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint8
  * @return Number of words read (0 indicates failure)
  */
 int8_t I2Cdev::readWords(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint16_t *data, uint16_t timeout) {
+    (void)timeout;
+    (void)length;
+    (void)regAddr;
+    (void)devAddr;
+
     int8_t count = 0;
 
     printf("ReadWords() not implemented\n");
