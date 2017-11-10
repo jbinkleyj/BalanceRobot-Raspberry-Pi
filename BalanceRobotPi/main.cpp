@@ -905,6 +905,7 @@ void  INThandler(int sig)
 {
      signal(sig, SIG_IGN);
      m_IsMainThreadRunning = false;
+     m_IsSerialThreadRunning = false;
      delay(100);
 
      printf("\b\bExiting...\n");
