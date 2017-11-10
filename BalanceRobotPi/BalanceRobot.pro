@@ -34,4 +34,4 @@ HEADERS += \
 
 LIBS += -L/usr/local/lib -lwiringPi
 
-LIBS += -lboost_system -lboost_thread -lbluetooth -lm  -lcrypt
+LIBS += -lboost_system -lbluetooth -lm  -lcrypt
