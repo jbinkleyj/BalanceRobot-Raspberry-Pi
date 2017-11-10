@@ -14,14 +14,15 @@
 #include <boost/thread.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
+#include <pthread.h>
 
+#include <wiringPi.h>
+#include <softPwm.h>
 #include "I2Cdev.h"
 #include "MPU6050.h"
 #include "Kalman.h"
 #include <math.h>
 #include <sys/time.h>
-#include <iostream>
-#include <wiringPi.h>
 #include "ComPacket.h"
 #include <sys/socket.h>
 #include <bluetooth/bluetooth.h>
@@ -30,6 +31,7 @@
 #include <bluetooth/sdp.h>
 #include <bluetooth/sdp_lib.h>
 #include <bluetooth/rfcomm.h>
+#include <signal.h>
 
 //sudo apt-get install libbluetooth-dev
 
@@ -38,56 +40,27 @@ static const unsigned int SLEEP_COUNTER= 100;
 
 #define RESTRICT_PITCH
 #define SAMPLE_TIME 10
-#define CONFIG_PWM_RANGE 1024
-#define CONFIG_PWM_CLOCK_DIV 2
 #define	COUNT_KEY	0
 #define	DEBOUNCE_TIME	100
 
-//RPi Motor Driver Board
-#define PWM_R 25  //PWMA
-#define PWM_L 26  //PWMB
-
-#define DIR_R1 28 //M1
-#define DIR_R2 29 //M2
-#define DIR_L1 22 //M3
-#define DIR_L2 23 //M4
+//physcal pins
+#define PWML1  31
+#define PWML2  33
+#define PWMR1  38
+#define PWMR2  40
+#define PWML  32
+#define PWMR  37
 
 //encoder define
-#define SPD_INT_R 1   //interrupt R Phys:12
+/*#define SPD_INT_R 1   //interrupt R Phys:12
 #define SPD_PUL_R 4    //Phys:16
 #define SPD_INT_L 5   //interrupt L Phys:18
-#define SPD_PUL_L 6    //Phys:22
-
-/*
-RPi Motor Driver Board, DC Motor Wiring instructions:
-
-Dc Motor:
-Brown: Motor line +
-Black: Encoder ground
-White: Encoder output B phase
-Green: Encoder output A phase
-Red: Encoder power supply
-Yellow: Motor line -
-
-Pi Expansion Board:
-Interface 	wiringPi 	BCM
-M1              P28         20
-M2              P29         21
-PWMA            P25         26
-M3              P22         6
-M4              P23         13
-PWMB            P26         12
-
-M1 	M2 	M3 	M4 	Descriptions
-1 	0 	1 	0 	When the motors rotate forwards, the robot goes straight
-0 	1 	0 	1 	When the motors rotate backwards, the robot draws back
-0 	0 	1 	0 	When the right motor stops and left motor rotates forwards, the robot turns right
-1 	0 	0 	0 	When the left motor stops and right motor rotates forwards, the robot turns left
-0 	0 	0 	0 	When the motors stop, the robot stops
-*/
+#define SPD_PUL_L 6    //Phys:22*/
 
 boost::atomic_bool m_IsMainThreadRunning,m_IsSerialThreadRunning;
 boost::shared_ptr<boost::thread> m_MainThreadInstance,m_SerialThreadInstance;
+boost::thread* tmain;
+boost::thread* tserial;
 
 template<typename T>
   T StringToNumber(const std::string& numberAsString)
@@ -136,7 +109,7 @@ double RAD_TO_DEG = 57.2958;
 int Speed_L,Speed_R;
 int mSpeed,pwm_l,pwm_r;
 unsigned int period = 10; //loop period in ms
-int pwnLimit = 1000;
+int pwnLimit = 100;
 
 int Speed_Need = 0;
 int Turn_Need = 0;
@@ -252,7 +225,7 @@ void disConnetRfComm() {
 }
 
 int calculateGyro()
-{    
+{
 
     if((micros() - timer) >= period * 1000)
     {    //10ms
@@ -318,11 +291,10 @@ int calculateGyro()
           gyroXangle = kalAngleX;
         if (gyroYangle < -180 || gyroYangle > 180)
           gyroYangle = kalAngleY;
-       
-        Angle_MPU =  kalAngleX;   //negative backward  positive forward       
-        Gyro_MPU = gyroXrate;      
+
+        Angle_MPU =  kalAngleX;   //negative backward  positive forward
+        Gyro_MPU = gyroXrate;
         Temperature = (double)accelgyro.getTemperature() / 340.0 + 36.53;
-        //printf("Angle_MPU : %.2f\n",Angle_MPU);
 
         return 1;
     }
@@ -336,7 +308,7 @@ void PWM_Calculate()
 
   Input = Angle_MPU;
 
-  double gap = abs(Setpoint - Input); //distance away from setpoint
+  //double gap = abs(Setpoint - Input); //distance away from setpoint
 
   balancePID.SetTunings(aggKp, aggKi, aggKd);
 
@@ -362,41 +334,43 @@ void Robot_Control()
 
     if (pwm_r>0)
     {
-    digitalWrite(DIR_R1, HIGH);
-    digitalWrite(DIR_R2, LOW);
+        digitalWrite(PWMR1, HIGH);
+        digitalWrite(PWMR2, LOW);
     }
 
     if (pwm_l>0)
     {
-    digitalWrite(DIR_L1, HIGH);
-    digitalWrite(DIR_L2, LOW);
+        digitalWrite(PWML1, HIGH);
+        digitalWrite(PWML2, LOW);
     }
 
     if (pwm_r<0)
     {
-    digitalWrite(DIR_R1, LOW);
-    digitalWrite(DIR_R2, HIGH);
-    pwm_l =- pwm_l;  //cchange to positive
+        digitalWrite(PWMR1, LOW);
+        digitalWrite(PWMR2, HIGH);
+        pwm_l =- pwm_l;  //cchange to positive
     }
 
     if (pwm_l<0)
     {
-    digitalWrite(DIR_L1, LOW);
-    digitalWrite(DIR_L2, HIGH);
-    pwm_r = -pwm_r;
+        digitalWrite(PWML1, LOW);
+        digitalWrite(PWML2, HIGH);
+        pwm_r = -pwm_r;
     }
 
     if( Angle_MPU > 45 || Angle_MPU < -45 )
     {
-    pwm_l = 0;
-    pwm_r = 0;
+        //pwm_l = 0;
+        //pwm_r = 0;
     }
 
-    pwmWrite(PWM_L, pwm_l);
-    pwmWrite(PWM_R, pwm_r);
+    softPwmWrite(PWML, pwm_l);
+    softPwmWrite(PWMR, pwm_r);
+
+    printf("Angle_MPU : %.2f  pwm_r : %d  pwm_l : %d\n",Angle_MPU,pwm_r,pwm_l);
 }
 
-void encodeL (void)
+/*void encodeL (void)
 {
     if (digitalRead(SPD_PUL_L))
         Speed_L += 1;
@@ -407,14 +381,14 @@ void encodeL (void)
 }
 
 void encodeR (void)
-{   
+{
     if (digitalRead(SPD_PUL_R))
         Speed_R += 1;
     else
         Speed_R -= 1;
 
     printf("Speed_R : %d \n",Speed_R);
-}
+}*/
 
 uchar *trim(uchar *s)
 {
@@ -468,7 +442,7 @@ void updateConfigurationFileFromStatus() {
 }
 
 void createConfigurationFile() {
-    boost::property_tree::ptree pt;    
+    boost::property_tree::ptree pt;
 
     aggKp = 10.0;
     aggKi = 40.0;
@@ -650,41 +624,6 @@ int getData(uchar* data) {
     else return -1;
 }
 
-void checkMainThread()
-{
-    while (m_IsMainThreadRunning)
-    {
-        if(!m_IsRunning)
-            continue;
-
-        if(calculateGyro())
-        {
-            PWM_Calculate();
-            Robot_Control();
-        }
-
-        ::usleep(SLEEP_PERIOD * 10);
-    }
-}
-
-void checkSerialThread()
-{
-    while (m_IsSerialThreadRunning)
-    {
-        uchar buffer[128];
-        getData(buffer);
-
-        if(m_IsRunning)
-        {
-            sprintf(buf, "Data:%d:%d:%0.2f:%d:%d:%d:%d:%0.2f:%0.2f:%0.2f:%0.2f:%d:%0.2f",
-            pwm_l, pwm_r,Angle_MPU,Speed_Need,Turn_Need,Speed_L,Speed_R,aggKp,aggKi,aggKd,Temperature,Position_AVG,Correction);
-            //printf("%s\n",buf);
-            sendData(buf,strlen(buf));
-        }
-
-        ::usleep(SLEEP_PERIOD * SLEEP_COUNTER);
-    }
-}
 std::string exec(const char* cmd) {
     char buffer[128];
     std::string result = "";
@@ -799,6 +738,46 @@ bool bindRFComm(const char* dest)
     return true;
 }
 
+PI_THREAD (serialThread)
+{
+    while (m_IsSerialThreadRunning)
+    {
+        uchar buffer[128];
+        getData(buffer);
+
+        if(m_IsRunning)
+        {
+            sprintf(buf, "Data:%d:%d:%0.2f:%d:%d:%d:%d:%0.2f:%0.2f:%0.2f:%0.2f:%d:%0.2f",
+            pwm_l, pwm_r,Angle_MPU,Speed_Need,Turn_Need,Speed_L,Speed_R,aggKp,aggKi,aggKd,Temperature,Position_AVG,Correction);
+            //printf("%s\n",buf);
+            sendData(buf,strlen(buf));
+        }
+
+        ::usleep(SLEEP_PERIOD * SLEEP_COUNTER);
+    }
+}
+
+PI_THREAD (mainThread)
+{
+    while (1)
+    {
+        if(!m_IsMainThreadRunning)
+        {
+            softPwmWrite(PWML, 0);
+            softPwmWrite(PWMR, 0);
+            continue;
+        }
+
+        if(calculateGyro())
+        {
+            PWM_Calculate();
+            Robot_Control();
+        }
+
+        ::usleep(SLEEP_PERIOD * 10);
+    }
+}
+
 void init()
 {
     m_IsMainThreadRunning = false;
@@ -818,61 +797,46 @@ void init()
         return;
     }
 
-    if (wiringPiSetup () < 0)
+    if (wiringPiSetupPhys () < 0)
     {
-        fprintf (stderr, "Unable to setup wiringPi: %s\n", strerror (errno)) ;
+        fprintf (stderr, "Unable to setup wiringPiSetupGpio: %s\n", strerror (errno)) ;
         return;
     }
     else
     {
-        pinMode(PWM_L, PWM_OUTPUT);
-        pinMode(PWM_R, PWM_OUTPUT);
-        pinMode(DIR_L1, OUTPUT);
-        pinMode(DIR_L2, OUTPUT);
-        pinMode(DIR_R1, OUTPUT);
-        pinMode(DIR_R2, OUTPUT);
-
-        pinMode(SPD_PUL_L, INPUT);
-        pinMode(SPD_PUL_R, INPUT);
-        pinMode(SPD_INT_L, INPUT);
-        pinMode(SPD_INT_R, INPUT);
+        pinMode(PWML1, OUTPUT);
+        pinMode(PWML2, OUTPUT);
+        pinMode(PWMR1, OUTPUT);
+        pinMode(PWMR2, OUTPUT);
 
         printf("Set pinModes ok.\n");
 
-        // Set PWM in mark-space mode
-        pwmSetMode(PWM_MODE_MS);
-        // Divide the RPI PWM clock base frequency(19.2e6) by 2
-        pwmSetClock(CONFIG_PWM_CLOCK_DIV);
-        // Set the PWM range
-        pwmSetRange(CONFIG_PWM_RANGE);
+        softPwmCreate(PWML,0,100);
+        softPwmCreate(PWMR,0,100);
 
-        // Initialize PWM signal to 0.
-        pwmWrite(PWM_L,0);
-        pwmWrite(PWM_R,0);
+        /* if (wiringPiISR (SPD_INT_L, INT_EDGE_FALLING, &encodeL) < 0)
+         {
+             fprintf (stderr, "Unable to setup ISR for left channel: %s\n", strerror (errno));
+             return;
+         }
+         else
+         {
+             printf("Setup encodeL for left channel successful.\n");
+         }
 
-        printf("wiringPiSetup ok.\n");
+         if (wiringPiISR (SPD_INT_R, INT_EDGE_FALLING, &encodeR) < 0)
+         {
+             fprintf (stderr, "Unable to setup ISR for right channel: %s\n", strerror (errno));
+             return;
+         }
+         else
+         {
+             printf("Setup encodeR for right channel successful.\n");
+         }  */
 
+
+        printf("wiringPiSetupPhys ok.\n");
     }
-
-    if (wiringPiISR (SPD_INT_L, INT_EDGE_FALLING, &encodeL) < 0)
-    {
-        fprintf (stderr, "Unable to setup ISR for left channel: %s\n", strerror (errno));
-        return;
-    }
-    else
-    {
-        printf("Setup encodeL for left channel successful.\n");
-    }
-
-    if (wiringPiISR (SPD_INT_R, INT_EDGE_FALLING, &encodeR) < 0)
-    {
-        fprintf (stderr, "Unable to setup ISR for right channel: %s\n", strerror (errno));
-        return;
-    }
-    else
-    {
-        printf("Setup encodeR for right channel successful.\n");
-    }    
 
     balancePID.SetMode(AUTOMATIC);
     balancePID.SetSampleTime(SAMPLE_TIME);
@@ -906,21 +870,22 @@ void init()
     if(rfcomm_connected)
     {
         m_IsSerialThreadRunning = true;
-        boost::thread* tserial = new boost::thread(checkSerialThread);
-        (void)tserial;
+        piThreadCreate (&serialThread) ;
     }
 
     m_IsMainThreadRunning = true;
-    boost::thread* tmain = new boost::thread(checkMainThread);
-    (void)tmain;
-
+    piThreadCreate (&mainThread) ;
     initConf();
+
     timer = micros();
 }
+
+void     INThandler(int);
 
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
+    signal(SIGINT, INThandler);
 
     if (getuid())
     {
@@ -930,8 +895,21 @@ int main(int argc, char *argv[])
     else
     {
         ResetValues();
-        init();       
+        init();
     }
 
     return a.exec();
+}
+
+void  INThandler(int sig)
+{
+     signal(sig, SIG_IGN);
+     m_IsMainThreadRunning = false;
+     delay(100);
+
+     printf("\b\bExiting...\n");
+
+     softPwmWrite(PWML, 0);
+     softPwmWrite(PWMR, 0);
+     exit(0);
 }
