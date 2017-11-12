@@ -9,13 +9,6 @@
 #include <fcntl.h> /* File control definitions */
 #include <errno.h> /* Error number definitions */
 #include <termios.h> /* POSIX terminal control definitions */
-
-#include <boost/atomic.hpp>
-#include <boost/thread.hpp>
-#include <boost/property_tree/ini_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <pthread.h>
-
 #include <wiringPi.h>
 #include <softPwm.h>
 #include "I2Cdev.h"
@@ -26,12 +19,14 @@
 #include "ComPacket.h"
 #include <sys/socket.h>
 #include <bluetooth/bluetooth.h>
-#include <bluetooth/hci.h>
-#include <bluetooth/hci_lib.h>
 #include <bluetooth/sdp.h>
+#include <bluetooth/hci.h>
 #include <bluetooth/sdp_lib.h>
 #include <bluetooth/rfcomm.h>
 #include <signal.h>
+#include <boost/property_tree/ini_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <pthread.h>
 
 //sudo apt-get install libbluetooth-dev
 
@@ -71,18 +66,6 @@ template<typename T>
      }
      return valor;
   }
-
-template<class T>
-const T& constrain(const T& x, const T& a, const T& b) {
-    if(x < a) {
-        return a;
-    }
-    else if(b < x) {
-        return b;
-    }
-    else
-        return x;
-}
 
 MPU6050 accelgyro;
 
