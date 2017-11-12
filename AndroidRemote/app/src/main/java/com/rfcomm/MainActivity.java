@@ -108,8 +108,7 @@ public class MainActivity extends ActionBarActivity
 							statusText.setText(getString(R.string.title_connected_to, mConnectedDeviceName));
 							break;
 						case BluetoothService.STATE_LISTEN:
-							statusText.setText(getString(R.string.title_listening));
-							StartStop.setText("Stop");
+							statusText.setText(getString(R.string.title_listening));							
 							break;
 						case BluetoothService.STATE_NONE:
 							statusText.setText(getString(R.string.title_not_connected));
@@ -210,7 +209,7 @@ public class MainActivity extends ActionBarActivity
 		textView_Speed1 = (TextView)findViewById(R.id.textView_Speed1);
 		textView_Speed2 = (TextView)findViewById(R.id.textView_Speed2);
 		textPwmL = (TextView)findViewById(R.id.textPwmL);
-		textPwmR = (TextView)findViewById(R.id.textPwmR);
+		textPwmR = (TextView)findViewById(R.id.textPwmR);top
 		textSpeedL = (TextView)findViewById(R.id.textSpeedL);
 		textSpeedR = (TextView)findViewById(R.id.textSpeedR);
 		textAngle = (TextView)findViewById(R.id.textAngle);
