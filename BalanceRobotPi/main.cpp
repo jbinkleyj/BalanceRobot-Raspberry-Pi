@@ -41,26 +41,22 @@ static const unsigned int SLEEP_COUNTER= 100;
 #define RESTRICT_PITCH
 #define SAMPLE_TIME 10
 #define	COUNT_KEY	0
-#define	DEBOUNCE_TIME	100
 
 //physcal pins
-#define PWML1  31
-#define PWML2  33
-#define PWMR1  38
-#define PWMR2  40
-#define PWML  32
-#define PWMR  37
+#define PWMR1  31
+#define PWMR2  33
+#define PWML1  38
+#define PWML2  40
+#define PWMR  32
+#define PWML  37
 
 //encoder define
-/*#define SPD_INT_R 1   //interrupt R Phys:12
-#define SPD_PUL_R 4    //Phys:16
-#define SPD_INT_L 5   //interrupt L Phys:18
-#define SPD_PUL_L 6    //Phys:22*/
+#define SPD_INT_L 12   //interrupt R Phys:12
+#define SPD_PUL_L 16   //Phys:16
+#define SPD_INT_R 18   //interrupt L Phys:18
+#define SPD_PUL_R 22   //Phys:22
 
-boost::atomic_bool m_IsMainThreadRunning,m_IsSerialThreadRunning;
-boost::shared_ptr<boost::thread> m_MainThreadInstance,m_SerialThreadInstance;
-boost::thread* tmain;
-boost::thread* tserial;
+bool m_IsMainThreadRunning,m_IsSerialThreadRunning;
 
 template<typename T>
   T StringToNumber(const std::string& numberAsString)
@@ -93,7 +89,7 @@ MPU6050 accelgyro;
 std::string RfCommAndroidMac = "5C:2E:59:D6:67:4B"; //this is default value, you may change it with your phone mac from settings.ini
 
 uint32_t timer;
-bool m_IsRunning = true;
+bool m_IsRunning = false;
 
 char buf[500];
 ComPacket SerialPacket;
@@ -109,7 +105,7 @@ double RAD_TO_DEG = 57.2958;
 int Speed_L,Speed_R;
 int mSpeed,pwm_l,pwm_r;
 unsigned int period = 10; //loop period in ms
-int pwnLimit = 100;
+int pwnLimit = 500;
 
 int Speed_Need = 0;
 int Turn_Need = 0;
@@ -129,10 +125,10 @@ double timediff = 0.0;
 Kalman kalmanX;
 Kalman kalmanY;
 
-double Setpoint;
-double aggKp;
-double aggKi;
-double aggKd;
+double Setpoint = 0.0;
+double aggKp = 25.0;
+double aggKi = 75.0;
+double aggKd = 0.4;
 
 double Input, Output;
 //Specify the links and initial tuning parameters
@@ -311,13 +307,14 @@ void PWM_Calculate()
   //double gap = abs(Setpoint - Input); //distance away from setpoint
 
   balancePID.SetTunings(aggKp, aggKi, aggKd);
-
   balancePID.Compute();
 
-  mSpeed = -constrain((int)Output,-pwnLimit,pwnLimit);
+  printf("Angle_MPU : %.2f  Output : %.1f\n",Angle_MPU,Output);
 
-  pwm_r = constrain(int(mSpeed - Turn_Need),-pwnLimit,pwnLimit);
-  pwm_l = constrain(int(mSpeed + Turn_Need),-pwnLimit,pwnLimit);
+  mSpeed = (int)Output;
+
+  pwm_r = int(mSpeed - Turn_Need);
+  pwm_l = int(mSpeed + Turn_Need);
 
   Speed_L = 0;
   Speed_R = 0;
@@ -334,8 +331,8 @@ void Robot_Control()
 
     if (pwm_r>0)
     {
-        digitalWrite(PWMR1, HIGH);
-        digitalWrite(PWMR2, LOW);
+        digitalWrite(PWMR1, LOW);
+        digitalWrite(PWMR2, HIGH);
     }
 
     if (pwm_l>0)
@@ -346,38 +343,35 @@ void Robot_Control()
 
     if (pwm_r<0)
     {
-        digitalWrite(PWMR1, LOW);
-        digitalWrite(PWMR2, HIGH);
-        pwm_l =- pwm_l;  //cchange to positive
+        digitalWrite(PWMR1, HIGH);
+        digitalWrite(PWMR2, LOW);
+        pwm_r =- pwm_r;  //cchange to positive
     }
 
     if (pwm_l<0)
     {
         digitalWrite(PWML1, LOW);
         digitalWrite(PWML2, HIGH);
-        pwm_r = -pwm_r;
+        pwm_l = -pwm_l;
     }
 
-    if( Angle_MPU > 45 || Angle_MPU < -45 )
+    if( Angle_MPU > 45 || Angle_MPU < -45 || !m_IsRunning)
     {
-        //pwm_l = 0;
-        //pwm_r = 0;
+        pwm_l = 0;
+        pwm_r = 0;
     }
 
     softPwmWrite(PWML, pwm_l);
     softPwmWrite(PWMR, pwm_r);
 
-    printf("Angle_MPU : %.2f  pwm_r : %d  pwm_l : %d\n",Angle_MPU,pwm_r,pwm_l);
 }
 
-/*void encodeL (void)
+void encodeL (void)
 {
     if (digitalRead(SPD_PUL_L))
         Speed_L += 1;
     else
         Speed_L -= 1;
-
-    printf("Speed_L : %d \n",Speed_L);
 }
 
 void encodeR (void)
@@ -386,9 +380,7 @@ void encodeR (void)
         Speed_R += 1;
     else
         Speed_R -= 1;
-
-    printf("Speed_R : %d \n",Speed_R);
-}*/
+}
 
 uchar *trim(uchar *s)
 {
@@ -444,8 +436,8 @@ void updateConfigurationFileFromStatus() {
 void createConfigurationFile() {
     boost::property_tree::ptree pt;
 
-    aggKp = 10.0;
-    aggKi = 40.0;
+    aggKp = 25.0;
+    aggKi = 75.0;
     aggKd = 0.4;
 
     printf("aggKp: %.1f aggKi: %.1f aggKd: %.1f\n",aggKp,aggKi,aggKd);
@@ -811,10 +803,10 @@ void init()
 
         printf("Set pinModes ok.\n");
 
-        softPwmCreate(PWML,0,100);
-        softPwmCreate(PWMR,0,100);
+        softPwmCreate(PWML,0,pwnLimit);
+        softPwmCreate(PWMR,0,pwnLimit);
 
-        /* if (wiringPiISR (SPD_INT_L, INT_EDGE_FALLING, &encodeL) < 0)
+         if (wiringPiISR (SPD_INT_L, INT_EDGE_FALLING, &encodeL) < 0)
          {
              fprintf (stderr, "Unable to setup ISR for left channel: %s\n", strerror (errno));
              return;
@@ -832,7 +824,7 @@ void init()
          else
          {
              printf("Setup encodeR for right channel successful.\n");
-         }  */
+         }
 
 
         printf("wiringPiSetupPhys ok.\n");
@@ -880,7 +872,7 @@ void init()
     timer = micros();
 }
 
-void     INThandler(int);
+void INThandler(int);
 
 int main(int argc, char *argv[])
 {
