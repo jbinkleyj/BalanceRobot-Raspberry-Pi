@@ -39,7 +39,7 @@ static const unsigned int SLEEP_PERIOD = 1000;
 static const unsigned int SLEEP_COUNTER= 100;
 
 #define RESTRICT_PITCH
-#define SAMPLE_TIME 10
+#define SAMPLE_TIME 1 //ms
 #define	COUNT_KEY	0
 
 //physcal pins
@@ -105,7 +105,6 @@ double RAD_TO_DEG = 57.2958;
 int Speed_L,Speed_R;
 int mSpeed,pwm_l,pwm_r;
 unsigned int period = 10; //loop period in ms
-int pwnLimit = 500;
 
 int Speed_Need = 0;
 int Turn_Need = 0;
@@ -125,10 +124,11 @@ double timediff = 0.0;
 Kalman kalmanX;
 Kalman kalmanY;
 
+int pwnLimit = 255;
 double Setpoint = 0.0;
-double aggKp = 25.0;
-double aggKi = 75.0;
-double aggKd = 0.4;
+double aggKp = 50.0;
+double aggKi = 50.0;
+double aggKd = 1.0;
 
 double Input, Output;
 //Specify the links and initial tuning parameters
@@ -299,25 +299,33 @@ int calculateGyro()
 
 void PWM_Calculate()
 {
-  //Speed_Diff = Speed_L - Speed_R;
-  //Speed_Diff_ALL += Speed_Diff;
+    Speed_Diff = abs(Speed_R) - abs(Speed_L);
+    //Speed_Diff_ALL += Speed_Diff;
 
-  Input = Angle_MPU;
+    Input = Angle_MPU;
 
-  //double gap = abs(Setpoint - Input); //distance away from setpoint
+    double gap = abs(Setpoint - Input); //distance away from setpoint
 
-  balancePID.SetTunings(aggKp, aggKi, aggKd);
-  balancePID.Compute();
+    if (gap < 10)
+    {  //we're close to setpoint, use conservative tuning parameters
+        balancePID.SetTunings(aggKp/3, 10*aggKi, aggKd/30);
+    }
+    else
+    {     //we're far from setpoint, use aggressive tuning parameters
+        balancePID.SetTunings(aggKp, 30*aggKi, aggKd/10);
+    }
 
-  printf("Angle_MPU : %.2f  Output : %.1f\n",Angle_MPU,Output);
+    balancePID.Compute();
 
-  mSpeed = (int)Output;
+    printf("Angle_MPU : %.2f  Output : %.1f  Speed_Diff: %d\n",Angle_MPU,Output,Speed_Diff);
 
-  pwm_r = int(mSpeed - Turn_Need);
-  pwm_l = int(mSpeed + Turn_Need);
+    mSpeed = (int)Output;
 
-  Speed_L = 0;
-  Speed_R = 0;
+    pwm_r = mSpeed;
+    pwm_l = mSpeed;
+
+    Speed_L = 0;
+    Speed_R = 0;
 }
 
 void Robot_Control()
@@ -435,10 +443,6 @@ void updateConfigurationFileFromStatus() {
 
 void createConfigurationFile() {
     boost::property_tree::ptree pt;
-
-    aggKp = 25.0;
-    aggKi = 75.0;
-    aggKd = 0.4;
 
     printf("aggKp: %.1f aggKi: %.1f aggKd: %.1f\n",aggKp,aggKi,aggKd);
 
@@ -766,7 +770,7 @@ PI_THREAD (mainThread)
             Robot_Control();
         }
 
-        ::usleep(SLEEP_PERIOD * 10);
+        ::usleep(SLEEP_PERIOD * SAMPLE_TIME);
     }
 }
 
