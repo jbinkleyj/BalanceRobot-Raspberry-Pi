@@ -460,7 +460,7 @@ void createConfigurationFile() {
     pt.put("Robot.RfCommAndroidMac", RfCommAndroidMac);
 
     boost::property_tree::ini_parser::write_ini("settings.ini", pt);
-    printf("settings.ini file created.\n");
+    printf("settings.ini file created.\n\n");
 }
 
 void initConf()
@@ -830,17 +830,17 @@ void init()
 
     if(accelgyro.testConnection())
     {
-        printf("MPU6050 connection successful.\n" );
+        printf("MPU6050 connection successful.\n\n" );
         isMPU6050_Found = true;
     }
     else
     {
-        printf("MPU6050 connection failed.\n");
+        printf("MPU6050 connection failed.\n\n");
     }
 
     if (wiringPiSetupPhys () < 0)
     {
-        fprintf (stderr, "Unable to setup wiringPiSetupGpio: %s\n", strerror (errno)) ;
+        fprintf (stderr, "Unable to setup wiringPiSetupGpio: %s\n\n", strerror (errno)) ;
     }
     else
     {
@@ -874,7 +874,7 @@ void init()
          printf("Setup encodeR for right channel successful.\n");
         }
 
-        printf("wiringPiSetupPhys ok.\n");
+        printf("wiringPiSetupPhys ok.\n\n");
 
         initRfcomm();
 
