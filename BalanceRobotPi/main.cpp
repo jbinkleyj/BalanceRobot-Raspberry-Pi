@@ -14,7 +14,6 @@
 #include "I2Cdev.h"
 #include "MPU6050.h"
 #include "Kalman.h"
-#include <Kalmanfilter.h>
 #include <math.h>
 #include <sys/time.h>
 #include "ComPacket.h"
@@ -39,8 +38,6 @@ static const unsigned int SLEEP_COUNTER= 100;
 #define RESTRICT_PITCH
 #define SAMPLE_TIME 1 //ms
 #define	COUNT_KEY	0
-#define KF_VAR_ACCEL 0.0075 // Variance of angel acceleration noise input.
-#define KF_VAR_MEASUREMENT 0.05
 
 //physcal pins
 #define PWMR1  31
@@ -73,9 +70,8 @@ template<typename T>
   }
 
 MPU6050 accelgyro;
-KalmanFilter *angel_filter;
 
-std::string RfCommAndroidMac = "28:C6:71:03:49:9E";//5C:2E:59:D6:67:4B change it with your phone mac
+std::string RfCommAndroidMac = "5C:2E:59:D6:67:4B";// 28:C6:71:03:49:9E change it with your phone mac
 
 /*
 pairing your phone
@@ -233,6 +229,8 @@ int calculateGyro()
         timediff = (micros() - timer)/1000;
         double dt = (double)(micros() - timer) / 1000000; // Calculate delta time
 
+        timer = micros();
+
         accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
         // display accel/gyro x/y/z values
         //printf("accel/gyro: %6hd %6hd %6hd   %6hd %6hd %6hd\n",ax,ay,az,gx,gy,gz);
@@ -290,14 +288,10 @@ int calculateGyro()
         if (gyroYangle < -180 || gyroYangle > 180)
           gyroYangle = kalAngleY;
 
-        angel_filter->Update(kalAngleX,KF_VAR_MEASUREMENT,dt);
-        Angle_MPU = angel_filter->GetXAbs();
+        Angle_MPU = kalAngleX;
 
         //Gyro_MPU = gyroXrate;
         //Temperature = (double)accelgyro.getTemperature() / 340.0 + 36.53;
-
-        timer = micros();
-
         return 1;
     }
     return 0;
@@ -747,13 +741,10 @@ PI_THREAD (serialThread)
         uchar buffer[128];
         getData(buffer);
 
-        if(m_IsRunning)
-        {
-            sprintf(buf, "Data:%d:%d:%0.2f:%d:%d:%d:%d:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f",
-            pwm_l, pwm_r,Angle_MPU,Speed_Need,Turn_Need,Speed_L,Speed_R,aggKp,aggKi,aggKd,Temperature,Correction,angle_error);
-            //printf("%s\n",buf);
-            sendData(buf,strlen(buf));
-        }
+        sprintf(buf, "Data:%d:%d:%0.2f:%d:%d:%d:%d:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f",
+        pwm_l, pwm_r,Angle_MPU,Speed_Need,Turn_Need,Speed_L,Speed_R,aggKp,aggKi,aggKd,Temperature,Correction,angle_error);
+        //printf("%s\n",buf);
+        sendData(buf,strlen(buf));
 
         ::usleep(SLEEP_PERIOD * SLEEP_COUNTER);
     }
@@ -820,9 +811,6 @@ void init()
     bool isMPU6050_Found = false;
     m_IsMainThreadRunning = false;
     m_IsSerialThreadRunning = false;
-
-    angel_filter = new KalmanFilter(KF_VAR_ACCEL);
-    angel_filter->Reset(Setpoint);
 
     // initialize device
     printf("\nInitializing I2C devices.\n");
