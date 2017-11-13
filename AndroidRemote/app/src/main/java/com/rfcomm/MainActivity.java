@@ -209,7 +209,7 @@ public class MainActivity extends ActionBarActivity
 		textView_Speed1 = (TextView)findViewById(R.id.textView_Speed1);
 		textView_Speed2 = (TextView)findViewById(R.id.textView_Speed2);
 		textPwmL = (TextView)findViewById(R.id.textPwmL);
-		textPwmR = (TextView)findViewById(R.id.textPwmR);top
+		textPwmR = (TextView)findViewById(R.id.textPwmR);
 		textSpeedL = (TextView)findViewById(R.id.textSpeedL);
 		textSpeedR = (TextView)findViewById(R.id.textSpeedR);
 		textAngle = (TextView)findViewById(R.id.textAngle);
