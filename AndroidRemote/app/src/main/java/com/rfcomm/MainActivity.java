@@ -60,6 +60,7 @@ public class MainActivity extends ActionBarActivity
 	public static float Kp = 0;
 	public static float Ki = 0;
 	public static float Kd = 0;
+	public static float Angle_Error = 0;
 
 	private int speed1;
 	private int speed2;
@@ -671,6 +672,8 @@ public class MainActivity extends ActionBarActivity
 			Kp = Float.valueOf(KP.replace(",","."));
 			Ki = Float.valueOf(KI.replace(",","."));
 			Kd = Float.valueOf(KD.replace(",","."));
+			Angle_Error = Float.valueOf(Error.replace(",","."));
+			PIDSet.addValue(Angle_Error);
 
 			//Log.e(TAG,"KP : " + Kp + "  KI : " + Ki + "  Kd : " + Kd );
 
