@@ -1,6 +1,7 @@
 package com.rfcomm;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -12,8 +13,19 @@ import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
+import com.jjoe64.graphview.GraphView;
+import com.jjoe64.graphview.LegendRenderer;
+import com.jjoe64.graphview.series.DataPoint;
+import com.jjoe64.graphview.series.LineGraphSeries;
+
 public class PIDSet {
-	
+
+	static GraphView graph;
+	static LineGraphSeries<DataPoint> mSeries;
+	static double graph2LastXValue = 0;
+	static int    maxXValue = 100;
+	static boolean isStarted = false;
+
 	public static void showPIDSetDialog(Context context, View parent) {
 		final String TAG = "BalanceRobotControl";
 		final TextView textView_KP;
@@ -29,6 +41,26 @@ public class PIDSet {
 				.findViewById(R.id.param_dlg_content_view);
 		View algoLineParamView = View
 				.inflate(context, R.layout.pidset, null);
+
+		graph = (GraphView) algoLineParamView.findViewById(R.id.graph);
+		graph.setBackgroundColor(Color.WHITE);
+		graph.getViewport().setMinX(0);
+		graph.getViewport().setMaxX(maxXValue);
+		graph.getViewport().setScrollable(true);
+		graph.getViewport().setScalable(true);
+
+		graph.getGridLabelRenderer().setGridColor(Color.DKGRAY);
+		graph.getGridLabelRenderer().reloadStyles();
+
+		graph.getViewport().setXAxisBoundsManual(true);
+	    graph.onDataChanged(true, true);
+
+		mSeries = new LineGraphSeries<>();
+		mSeries.setThickness(6);
+		mSeries.setColor(Color.BLUE);
+
+		graph.addSeries(mSeries);
+
 		//final EditText algoLineEdit = (EditText) algoLineParamView
 				//.findViewById(R.id.algo_line_edit);
 		//algoLineEdit.setText(component.getKAngle() + "");
@@ -66,6 +98,8 @@ public class PIDSet {
 		float KD =(float) seekBar_KD.getProgress() / 10;
 		String sKD = Float.toString(KD);
 		textView_KD.setText("KD = " + sKD);
+
+		isStarted = true;
 
 		OnSeekBarChangeListener seekBar_KP_Listener = new OnSeekBarChangeListener() {
 			@Override
@@ -158,8 +192,27 @@ public class PIDSet {
 			public void onClick(View v) {
 				pinParamDialog.dismiss();
 				MainActivity.setVisible();
+				//addValue(Math.sin(graph2LastXValue*0.5) * 20*(Math.random()*10+1));
 			}
 		});
 		pinParamDialog.showAtLocation(parent, Gravity.CENTER, 0, 0);
-	}	
+	}
+
+	public static void addValue(double value) {
+
+		if(isStarted)
+		{
+			mSeries.appendData(new DataPoint(graph2LastXValue, value), true, maxXValue);
+
+			if (graph2LastXValue >= maxXValue) {
+				mSeries.resetData(new DataPoint[]{});
+				graph2LastXValue = 0;
+			}
+			else
+				graph2LastXValue += 1d;
+
+			graph.getViewport().setMinX(0);
+			graph.getViewport().setMaxX(maxXValue);
+		}
+	}
 }
