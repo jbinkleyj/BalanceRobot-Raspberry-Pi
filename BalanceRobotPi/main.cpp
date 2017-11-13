@@ -126,8 +126,8 @@ Kalman kalmanY;
 int pwnLimit = 255;
 double Setpoint = 0.0;
 double aggKp = 50.0;
-double aggKi = 50.0;
-double aggKd = 1.0;
+double aggKi = 75.0;
+double aggKd = 2.0;
 double angle_error = 0.0;
 
 double Input, Output;
@@ -218,160 +218,6 @@ void disConnetRfComm() {
         close(fd);
         printf("RfComm: Device %d is now closed.\n", fd);
     }
-}
-
-int calculateGyro()
-{
-
-    if((micros() - timer) >= period * 1000)
-    {    //10ms
-
-        timediff = (micros() - timer)/1000;
-        double dt = (double)(micros() - timer) / 1000000; // Calculate delta time
-
-        timer = micros();
-
-        accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-        // display accel/gyro x/y/z values
-        //printf("accel/gyro: %6hd %6hd %6hd   %6hd %6hd %6hd\n",ax,ay,az,gx,gy,gz);
-
-        accX = (int16_t)(ax);
-        accY = (int16_t)(ay);
-        accZ = (int16_t)(az);
-
-        gyroX = (int16_t)(gx);
-        gyroY = (int16_t)(gy);
-        gyroZ = (int16_t)(gz);
-
-        // It is then converted from radians to degrees
-        #ifdef RESTRICT_PITCH // Eq. 25 and 26
-        double roll  = atan2(accY, accZ) * RAD_TO_DEG;
-        double pitch = atan(-accX / sqrt(accY * accY + accZ * accZ)) * RAD_TO_DEG;
-        #else // Eq. 28 and 29
-        double roll  = atan(accY / sqrt(accX * accX + accZ * accZ)) * RAD_TO_DEG;
-        double pitch = atan2(-accX, accZ) * RAD_TO_DEG;
-        #endif
-
-        double gyroXrate = gyroX / 131.0; // Convert to deg/s
-        double gyroYrate = gyroY / 131.0; // Convert to deg/s
-
-        #ifdef RESTRICT_PITCH
-        // This fixes the transition problem when the accelerometer angle jumps between -180 and 180 degrees
-        if ((roll < -90 && kalAngleX > 90) || (roll > 90 && kalAngleX < -90)) {
-          kalmanX.setAngle(roll);
-          compAngleX = roll;
-          kalAngleX = roll;
-          gyroXangle = roll;
-        } else
-          kalAngleX = kalmanX.getAngle(roll, gyroXrate, dt); // Calculate the angle using a Kalman filter
-
-        if (abs(kalAngleX) > 90)
-          gyroYrate = -gyroYrate; // Invert rate, so it fits the restriced accelerometer reading
-        kalAngleY = kalmanY.getAngle(pitch, gyroYrate, dt);
-        #else
-        // This fixes the transition problem when the accelerometer angle jumps between -180 and 180 degrees
-        if ((pitch < -90 && kalAngleY > 90) || (pitch > 90 && kalAngleY < -90)) {
-          kalmanY.setAngle(pitch);
-          compAngleY = pitch;
-          kalAngleY = pitch;
-          gyroYangle = pitch;
-        } else
-          kalAngleY = kalmanY.getAngle(pitch, gyroYrate, dt); // Calculate the angle using a Kalman filter
-
-        if (abs(kalAngleY) > 90)
-          gyroXrate = -gyroXrate; // Invert rate, so it fits the restriced accelerometer reading
-          kalAngleX = kalmanX.getAngle(roll, gyroXrate, dt); // Calculate the angle using a Kalman filter
-        #endif
-
-        if (gyroXangle < -180 || gyroXangle > 180)
-          gyroXangle = kalAngleX;
-        if (gyroYangle < -180 || gyroYangle > 180)
-          gyroYangle = kalAngleY;
-
-        Angle_MPU = kalAngleX;
-
-        //Gyro_MPU = gyroXrate;
-        //Temperature = (double)accelgyro.getTemperature() / 340.0 + 36.53;
-        return 1;
-    }
-    return 0;
-}
-
-void PWM_Calculate()
-{
-    Speed_Diff = abs(Speed_R) - abs(Speed_L);
-    //Speed_Diff_ALL += Speed_Diff;
-
-    Input = Angle_MPU;
-
-    angle_error = abs(Setpoint - Input); //distance away from setpoint
-
-    if (angle_error < 10)
-    {  //we're close to setpoint, use conservative tuning parameters
-        balancePID.SetTunings(aggKp/3, 10*aggKi, aggKd/30);
-    }
-    else
-    {     //we're far from setpoint, use aggressive tuning parameters
-        balancePID.SetTunings(aggKp, 30*aggKi, aggKd/10);
-    }
-
-    balancePID.Compute();
-
-    printf("Angle_MPU : %.2f  Output : %.1f  Speed_Diff: %d\n",Angle_MPU,Output,Speed_Diff);
-
-    mSpeed = (int)Output;
-
-    pwm_r = mSpeed;
-    pwm_l = mSpeed;
-
-    Speed_L = 0;
-    Speed_R = 0;
-}
-
-void Robot_Control()
-{
-   /* M1 	M2 	M3 	M4 	Descriptions
-    1 	0 	1 	0 	When the motors rotate forwards, the robot goes straight
-    0 	1 	0 	1 	When the motors rotate backwards, the robot draws back
-    0 	0 	1 	0 	When the right motor stops and left motor rotates forwards, the robot turns right
-    1 	0 	0 	0 	When the left motor stops and right motor rotates forwards, the robot turns left
-    0 	0 	0 	0 	When the motors stop, the robot stops*/
-
-    if (pwm_r>0)
-    {
-        digitalWrite(PWMR1, LOW);
-        digitalWrite(PWMR2, HIGH);
-    }
-
-    if (pwm_l>0)
-    {
-        digitalWrite(PWML1, HIGH);
-        digitalWrite(PWML2, LOW);
-    }
-
-    if (pwm_r<0)
-    {
-        digitalWrite(PWMR1, HIGH);
-        digitalWrite(PWMR2, LOW);
-        pwm_r =- pwm_r;  //cchange to positive
-    }
-
-    if (pwm_l<0)
-    {
-        digitalWrite(PWML1, LOW);
-        digitalWrite(PWML2, HIGH);
-        pwm_l = -pwm_l;
-    }
-
-    if( Angle_MPU > 45 || Angle_MPU < -45 || !m_IsRunning)
-    {
-        pwm_l = 0;
-        pwm_r = 0;
-    }
-
-    softPwmWrite(PWML, pwm_l);
-    softPwmWrite(PWMR, pwm_r);
-
 }
 
 void encodeL (void)
@@ -734,6 +580,155 @@ bool bindRFComm(const char* dest)
     return true;
 }
 
+
+void calculateGyro()
+{
+    timediff = (micros() - timer)/1000;
+    double dt = (double)(micros() - timer) / 1000000; // Calculate delta time
+
+    timer = micros();
+
+    accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+    // display accel/gyro x/y/z values
+    //printf("accel/gyro: %6hd %6hd %6hd   %6hd %6hd %6hd\n",ax,ay,az,gx,gy,gz);
+
+    accX = (int16_t)(ax);
+    accY = (int16_t)(ay);
+    accZ = (int16_t)(az);
+
+    gyroX = (int16_t)(gx);
+    gyroY = (int16_t)(gy);
+    gyroZ = (int16_t)(gz);
+
+    // It is then converted from radians to degrees
+    #ifdef RESTRICT_PITCH // Eq. 25 and 26
+    double roll  = atan2(accY, accZ) * RAD_TO_DEG;
+    double pitch = atan(-accX / sqrt(accY * accY + accZ * accZ)) * RAD_TO_DEG;
+    #else // Eq. 28 and 29
+    double roll  = atan(accY / sqrt(accX * accX + accZ * accZ)) * RAD_TO_DEG;
+    double pitch = atan2(-accX, accZ) * RAD_TO_DEG;
+    #endif
+
+    double gyroXrate = gyroX / 131.0; // Convert to deg/s
+    double gyroYrate = gyroY / 131.0; // Convert to deg/s
+
+    #ifdef RESTRICT_PITCH
+    // This fixes the transition problem when the accelerometer angle jumps between -180 and 180 degrees
+    if ((roll < -90 && kalAngleX > 90) || (roll > 90 && kalAngleX < -90)) {
+      kalmanX.setAngle(roll);
+      compAngleX = roll;
+      kalAngleX = roll;
+      gyroXangle = roll;
+    } else
+      kalAngleX = kalmanX.getAngle(roll, gyroXrate, dt); // Calculate the angle using a Kalman filter
+
+    if (abs(kalAngleX) > 90)
+      gyroYrate = -gyroYrate; // Invert rate, so it fits the restriced accelerometer reading
+    kalAngleY = kalmanY.getAngle(pitch, gyroYrate, dt);
+    #else
+    // This fixes the transition problem when the accelerometer angle jumps between -180 and 180 degrees
+    if ((pitch < -90 && kalAngleY > 90) || (pitch > 90 && kalAngleY < -90)) {
+      kalmanY.setAngle(pitch);
+      compAngleY = pitch;
+      kalAngleY = pitch;
+      gyroYangle = pitch;
+    } else
+      kalAngleY = kalmanY.getAngle(pitch, gyroYrate, dt); // Calculate the angle using a Kalman filter
+
+    if (abs(kalAngleY) > 90)
+      gyroXrate = -gyroXrate; // Invert rate, so it fits the restriced accelerometer reading
+      kalAngleX = kalmanX.getAngle(roll, gyroXrate, dt); // Calculate the angle using a Kalman filter
+    #endif
+
+    if (gyroXangle < -180 || gyroXangle > 180)
+      gyroXangle = kalAngleX;
+    if (gyroYangle < -180 || gyroYangle > 180)
+      gyroYangle = kalAngleY;
+
+    Angle_MPU = kalAngleX;
+
+    //Gyro_MPU = gyroXrate;
+    //Temperature = (double)accelgyro.getTemperature() / 340.0 + 36.53;
+}
+
+
+void PWM_Calculate()
+{
+    Speed_Diff = abs(Speed_R) - abs(Speed_L);
+    Speed_Diff_ALL += Speed_Diff;
+
+    Input = Angle_MPU;
+
+    angle_error = abs(Setpoint - Input); //distance away from setpoint
+
+    if (angle_error < 10)
+    {  //we're close to setpoint, use conservative tuning parameters
+        balancePID.SetTunings(aggKp/3,  aggKi , aggKd / 12);
+    }
+    else
+    {     //we're far from setpoint, use aggressive tuning parameters
+        balancePID.SetTunings(aggKp, 3 * aggKi, aggKd / 4);
+    }
+
+    balancePID.Compute();
+
+    //printf("Angle_MPU : %.2f  Output : %.1f  Speed_Diff: %d\n",Angle_MPU,Output,Speed_Diff);
+
+    mSpeed = (int)Output;
+
+    pwm_r = mSpeed;
+    pwm_l = mSpeed;
+
+    Speed_L = 0;
+    Speed_R = 0;
+}
+
+void Robot_Control()
+{
+   /* M1 	M2 	M3 	M4 	Descriptions
+    1 	0 	1 	0 	When the motors rotate forwards, the robot goes straight
+    0 	1 	0 	1 	When the motors rotate backwards, the robot draws back
+    0 	0 	1 	0 	When the right motor stops and left motor rotates forwards, the robot turns right
+    1 	0 	0 	0 	When the left motor stops and right motor rotates forwards, the robot turns left
+    0 	0 	0 	0 	When the motors stop, the robot stops*/
+
+    if (pwm_r>0)
+    {
+        digitalWrite(PWMR1, LOW);
+        digitalWrite(PWMR2, HIGH);
+    }
+
+    if (pwm_l>0)
+    {
+        digitalWrite(PWML1, HIGH);
+        digitalWrite(PWML2, LOW);
+    }
+
+    if (pwm_r<0)
+    {
+        digitalWrite(PWMR1, HIGH);
+        digitalWrite(PWMR2, LOW);
+        pwm_r =- pwm_r;  //cchange to positive
+    }
+
+    if (pwm_l<0)
+    {
+        digitalWrite(PWML1, LOW);
+        digitalWrite(PWML2, HIGH);
+        pwm_l = -pwm_l;
+    }
+
+    if( Angle_MPU > 45 || Angle_MPU < -45 || !m_IsRunning)
+    {
+        pwm_l = 0;
+        pwm_r = 0;
+    }
+
+    softPwmWrite(PWML, pwm_l);
+    softPwmWrite(PWMR, pwm_r);
+
+}
+
 PI_THREAD (serialThread)
 {
     while (m_IsSerialThreadRunning)
@@ -741,10 +736,10 @@ PI_THREAD (serialThread)
         uchar buffer[128];
         getData(buffer);
 
-        sprintf(buf, "Data:%d:%d:%0.2f:%d:%d:%d:%d:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f",
+        sprintf(buf, "Data:%d:%d:%0.2f:%d:%d:%d:%d:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:",
         pwm_l, pwm_r,Angle_MPU,Speed_Need,Turn_Need,Speed_L,Speed_R,aggKp,aggKi,aggKd,Temperature,Correction,angle_error);
-        //printf("%s\n",buf);
         sendData(buf,strlen(buf));
+        //printf("%s\n",buf);
 
         ::usleep(SLEEP_PERIOD * SLEEP_COUNTER);
     }
@@ -761,11 +756,9 @@ PI_THREAD (mainThread)
             continue;
         }
 
-        if(calculateGyro())
-        {
-            PWM_Calculate();
-            Robot_Control();
-        }
+        calculateGyro();
+        PWM_Calculate();
+        Robot_Control();
 
         ::usleep(SLEEP_PERIOD * SAMPLE_TIME);
     }
