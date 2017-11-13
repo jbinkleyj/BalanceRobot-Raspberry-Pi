@@ -9,7 +9,7 @@
 #include <fcntl.h> /* File control definitions */
 #include <errno.h> /* Error number definitions */
 #include <termios.h> /* POSIX terminal control definitions */
-#include <wiringPi.h>
+
 #include <softPwm.h>
 #include "I2Cdev.h"
 #include "MPU6050.h"
@@ -28,7 +28,9 @@
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <pthread.h>
+#include <wiringPi.h>
 
+//#include <wiringPiI2C.h>
 //sudo apt-get install libbluetooth-dev
 
 static const unsigned int SLEEP_PERIOD = 1000;
@@ -73,7 +75,7 @@ template<typename T>
 MPU6050 accelgyro;
 KalmanFilter *angel_filter;
 
-std::string RfCommAndroidMac = "00:...";// change it with your phone mac
+std::string RfCommAndroidMac = "28:C6:71:03:49:9E";//5C:2E:59:D6:67:4B change it with your phone mac
 
 /*
 pairing your phone
@@ -130,6 +132,7 @@ double Setpoint = 0.0;
 double aggKp = 50.0;
 double aggKi = 50.0;
 double aggKd = 1.0;
+double angle_error = 0.0;
 
 double Input, Output;
 //Specify the links and initial tuning parameters
@@ -307,9 +310,9 @@ void PWM_Calculate()
 
     Input = Angle_MPU;
 
-    double gap = abs(Setpoint - Input); //distance away from setpoint
+    angle_error = abs(Setpoint - Input); //distance away from setpoint
 
-    if (gap < 10)
+    if (angle_error < 10)
     {  //we're close to setpoint, use conservative tuning parameters
         balancePID.SetTunings(aggKp/3, 10*aggKi, aggKd/30);
     }
@@ -746,8 +749,8 @@ PI_THREAD (serialThread)
 
         if(m_IsRunning)
         {
-            sprintf(buf, "Data:%d:%d:%0.2f:%d:%d:%d:%d:%0.2f:%0.2f:%0.2f:%0.2f:%d:%0.2f",
-            pwm_l, pwm_r,Angle_MPU,Speed_Need,Turn_Need,Speed_L,Speed_R,aggKp,aggKi,aggKd,Temperature,Position_AVG,Correction);
+            sprintf(buf, "Data:%d:%d:%0.2f:%d:%d:%d:%d:%0.2f:%0.2f:%0.2f:%0.2f:%d:%0.2f:%0.2f",
+            pwm_l, pwm_r,Angle_MPU,Speed_Need,Turn_Need,Speed_L,Speed_R,aggKp,aggKi,aggKd,Temperature,Position_AVG,Correction,angle_error);
             //printf("%s\n",buf);
             sendData(buf,strlen(buf));
         }
@@ -777,73 +780,8 @@ PI_THREAD (mainThread)
     }
 }
 
-void init()
+void initRfcomm()
 {
-    m_IsMainThreadRunning = false;
-    m_IsSerialThreadRunning = false;
-
-    angel_filter = new KalmanFilter(KF_VAR_ACCEL);
-    angel_filter->Reset(Setpoint);
-
-    // initialize device
-    printf("\nInitializing I2C devices.\n");
-    accelgyro.initialize();
-
-    if(accelgyro.testConnection())
-    {
-        printf("MPU6050 connection successful.\n" );
-    }
-    else
-    {
-        printf("MPU6050 connection failed.\n");
-        return;
-    }
-
-    if (wiringPiSetupPhys () < 0)
-    {
-        fprintf (stderr, "Unable to setup wiringPiSetupGpio: %s\n", strerror (errno)) ;
-        return;
-    }
-    else
-    {
-        pinMode(PWML1, OUTPUT);
-        pinMode(PWML2, OUTPUT);
-        pinMode(PWMR1, OUTPUT);
-        pinMode(PWMR2, OUTPUT);
-
-        printf("Set pinModes ok.\n");
-
-        softPwmCreate(PWML,0,pwnLimit);
-        softPwmCreate(PWMR,0,pwnLimit);
-
-         if (wiringPiISR (SPD_INT_L, INT_EDGE_FALLING, &encodeL) < 0)
-         {
-             fprintf (stderr, "Unable to setup ISR for left channel: %s\n", strerror (errno));
-             return;
-         }
-         else
-         {
-             printf("Setup encodeL for left channel successful.\n");
-         }
-
-         if (wiringPiISR (SPD_INT_R, INT_EDGE_FALLING, &encodeR) < 0)
-         {
-             fprintf (stderr, "Unable to setup ISR for right channel: %s\n", strerror (errno));
-             return;
-         }
-         else
-         {
-             printf("Setup encodeR for right channel successful.\n");
-         }
-
-
-        printf("wiringPiSetupPhys ok.\n");
-    }
-
-    balancePID.SetMode(AUTOMATIC);
-    balancePID.SetSampleTime(SAMPLE_TIME);
-    balancePID.SetOutputLimits(-pwnLimit, pwnLimit);
-
     bool rfcomm_connected = false;
     printf("\nTrying to connect rfcomm port...\n");
 
@@ -875,19 +813,106 @@ void init()
         piThreadCreate (&serialThread) ;
     }
 
-    m_IsMainThreadRunning = true;
-    piThreadCreate (&mainThread) ;
-    initConf();
+}
+
+void init()
+{
+    bool isMPU6050_Found = false;
+    m_IsMainThreadRunning = false;
+    m_IsSerialThreadRunning = false;
+
+    angel_filter = new KalmanFilter(KF_VAR_ACCEL);
+    angel_filter->Reset(Setpoint);
+
+    // initialize device
+    printf("\nInitializing I2C devices.\n");
+    accelgyro.initialize();
+
+    if(accelgyro.testConnection())
+    {
+        printf("MPU6050 connection successful.\n" );
+        isMPU6050_Found = true;
+    }
+    else
+    {
+        printf("MPU6050 connection failed.\n");
+    }
+
+    if (wiringPiSetupPhys () < 0)
+    {
+        fprintf (stderr, "Unable to setup wiringPiSetupGpio: %s\n", strerror (errno)) ;
+    }
+    else
+    {
+        pinMode(PWML1, OUTPUT);
+        pinMode(PWML2, OUTPUT);
+        pinMode(PWMR1, OUTPUT);
+        pinMode(PWMR2, OUTPUT);
+
+        printf("Set pinModes ok.\n");
+
+        softPwmCreate(PWML,0,pwnLimit);
+        softPwmCreate(PWMR,0,pwnLimit);
+
+        if (wiringPiISR (SPD_INT_L, INT_EDGE_FALLING, &encodeL) < 0)
+        {
+         fprintf (stderr, "Unable to setup ISR for left channel: %s\n", strerror (errno));
+         return;
+        }
+        else
+        {
+         printf("Setup encodeL for left channel successful.\n");
+        }
+
+        if (wiringPiISR (SPD_INT_R, INT_EDGE_FALLING, &encodeR) < 0)
+        {
+         fprintf (stderr, "Unable to setup ISR for right channel: %s\n", strerror (errno));
+         return;
+        }
+        else
+        {
+         printf("Setup encodeR for right channel successful.\n");
+        }
+
+        printf("wiringPiSetupPhys ok.\n");
+
+        initRfcomm();
+
+        initConf();
+
+        balancePID.SetMode(AUTOMATIC);
+        balancePID.SetSampleTime(SAMPLE_TIME);
+        balancePID.SetOutputLimits(-pwnLimit, pwnLimit);
+
+        if(isMPU6050_Found)
+        {
+            m_IsMainThreadRunning = true;
+            piThreadCreate (&mainThread) ;
+        }
+    }
 
     timer = micros();
 }
 
-void INThandler(int);
+
+void  ExitHandler(int sig)
+{
+     signal(sig, SIG_IGN);
+     m_IsMainThreadRunning = false;
+     m_IsSerialThreadRunning = false;
+     usleep(1000 * 100);
+
+     printf("\b\bExiting...\n");
+
+     softPwmWrite(PWML, 0);
+     softPwmWrite(PWMR, 0);
+     exit(0);
+}
 
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
-    signal(SIGINT, INThandler);
+    signal(SIGINT, ExitHandler);
 
     if (getuid())
     {
@@ -899,20 +924,27 @@ int main(int argc, char *argv[])
         ResetValues();
         init();
     }
-
     return a.exec();
 }
 
-void  INThandler(int sig)
+/*void readMPU6050() // alternate read i2c method
 {
-     signal(sig, SIG_IGN);
-     m_IsMainThreadRunning = false;
-     m_IsSerialThreadRunning = false;
-     delay(100);
+    int fd;
+    fd = wiringPiI2CSetup (0x68);
+    wiringPiI2CWriteReg8 (fd,0x6B,0x00);//set the sleep unenable
+    printf("set 0x6B=%X\n",wiringPiI2CReadReg8 (fd,0x6B));
 
-     printf("\b\bExiting...\n");
+    while(1)
+    {
+        printf("My valueX:%X+%X\n",wiringPiI2CReadReg8(fd, 0x43),wiringPiI2CReadReg8(fd, 0x44));
+        printf("My valueY:%X+%X\n",wiringPiI2CReadReg8(fd, 0x45),wiringPiI2CReadReg8(fd, 0x46));
+        printf("My valueZ:%X+%X\n---------------------\n",wiringPiI2CReadReg8(fd, 0x47),wiringPiI2CReadReg8(fd, 0x48));
 
-     softPwmWrite(PWML, 0);
-     softPwmWrite(PWMR, 0);
-     exit(0);
-}
+        printf("My valueX:%X\n",wiringPiI2CReadReg16(fd, 0x43));
+        printf("My valueY:%X\n",wiringPiI2CReadReg16(fd, 0x45));
+        printf("My valueZ:%X\n------------------------\n",wiringPiI2CReadReg16(fd, 0x47));
+
+        delay(1000);
+    }
+}*/
+
