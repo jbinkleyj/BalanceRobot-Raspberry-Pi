@@ -605,9 +605,8 @@ public class MainActivity extends ActionBarActivity
 			String KP = "0";
 			String KI = "0";
 			String KD = "0";
-			String Ultarsonic_Distance = "0";
-			String Position_Add = "0";
 			String Correction = "0";
+			String Error = "0";
 
 			StringTokenizer token = new StringTokenizer(tmpmsg, ":");
 			Log.e(TAG,tmpmsg);
@@ -661,11 +660,11 @@ public class MainActivity extends ActionBarActivity
 			}
 			if(token.hasMoreTokens())
 			{
-				Position_Add = token.nextToken();
+				Correction = token.nextToken();
 			}
 			if(token.hasMoreTokens())
 			{
-				Correction = token.nextToken();
+				Error = token.nextToken();
 			}
 
 
@@ -677,7 +676,7 @@ public class MainActivity extends ActionBarActivity
 
 			tmpmsg =  "KP : " + Kp + "  KI : " + Ki + "  KD : " + Kd + "\n"
 					+ "PwmL: " + Pwml +  "  PwmR: " + Pwmr + "  SpN: : " + Speed_Need +  "  TnN: " + Turn_Need + "\n"
-					+ "Temp: " + Temperature +  "  Correction: " + Correction;
+					+ "Temp: " + Temperature +  "  Correction: " + Correction +  "  Error: " + Error;
 
 			textSpeedL.setText("L: " + Speed_L);
 			textPwmR.setText("PR: " + Pwmr);
