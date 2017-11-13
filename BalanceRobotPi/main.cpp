@@ -749,8 +749,8 @@ PI_THREAD (serialThread)
 
         if(m_IsRunning)
         {
-            sprintf(buf, "Data:%d:%d:%0.2f:%d:%d:%d:%d:%0.2f:%0.2f:%0.2f:%0.2f:%d:%0.2f:%0.2f",
-            pwm_l, pwm_r,Angle_MPU,Speed_Need,Turn_Need,Speed_L,Speed_R,aggKp,aggKi,aggKd,Temperature,Position_AVG,Correction,angle_error);
+            sprintf(buf, "Data:%d:%d:%0.2f:%d:%d:%d:%d:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f",
+            pwm_l, pwm_r,Angle_MPU,Speed_Need,Turn_Need,Speed_L,Speed_R,aggKp,aggKi,aggKd,Temperature,Correction,angle_error);
             //printf("%s\n",buf);
             sendData(buf,strlen(buf));
         }
