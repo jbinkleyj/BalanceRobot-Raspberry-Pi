@@ -14,6 +14,7 @@
 #include "I2Cdev.h"
 #include "MPU6050.h"
 #include "Kalman.h"
+#include <Kalmanfilter.h>
 #include <math.h>
 #include <sys/time.h>
 #include "ComPacket.h"
@@ -36,6 +37,8 @@ static const unsigned int SLEEP_COUNTER= 100;
 #define RESTRICT_PITCH
 #define SAMPLE_TIME 1 //ms
 #define	COUNT_KEY	0
+#define KF_VAR_ACCEL 0.0075 // Variance of angel acceleration noise input.
+#define KF_VAR_MEASUREMENT 0.05
 
 //physcal pins
 #define PWMR1  31
@@ -68,6 +71,7 @@ template<typename T>
   }
 
 MPU6050 accelgyro;
+KalmanFilter *angel_filter;
 
 std::string RfCommAndroidMac = "5C:2E:59:D6:67:4B"; //this is default value, you may change it with your phone mac from settings.ini
 
@@ -210,6 +214,8 @@ int calculateGyro()
     {    //10ms
 
         timediff = (micros() - timer)/1000;
+        double dt = (double)(micros() - timer) / 1000000; // Calculate delta time
+
         accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
         // display accel/gyro x/y/z values
         //printf("accel/gyro: %6hd %6hd %6hd   %6hd %6hd %6hd\n",ax,ay,az,gx,gy,gz);
@@ -221,10 +227,6 @@ int calculateGyro()
         gyroX = (int16_t)(gx);
         gyroY = (int16_t)(gy);
         gyroZ = (int16_t)(gz);
-
-        double dt = (double)(micros() - timer) / 1000000; // Calculate delta time
-
-        timer = micros();
 
         // It is then converted from radians to degrees
         #ifdef RESTRICT_PITCH // Eq. 25 and 26
@@ -271,9 +273,13 @@ int calculateGyro()
         if (gyroYangle < -180 || gyroYangle > 180)
           gyroYangle = kalAngleY;
 
-        Angle_MPU =  kalAngleX;   //negative backward  positive forward
-        Gyro_MPU = gyroXrate;
-        Temperature = (double)accelgyro.getTemperature() / 340.0 + 36.53;
+        angel_filter->Update(kalAngleX,KF_VAR_MEASUREMENT,dt);
+        Angle_MPU = angel_filter->GetXAbs();
+
+        //Gyro_MPU = gyroXrate;
+        //Temperature = (double)accelgyro.getTemperature() / 340.0 + 36.53;
+
+        timer = micros();
 
         return 1;
     }
@@ -761,6 +767,9 @@ void init()
 {
     m_IsMainThreadRunning = false;
     m_IsSerialThreadRunning = false;
+
+    angel_filter = new KalmanFilter(KF_VAR_ACCEL);
+    angel_filter->Reset(Setpoint);
 
     // initialize device
     printf("\nInitializing I2C devices.\n");
