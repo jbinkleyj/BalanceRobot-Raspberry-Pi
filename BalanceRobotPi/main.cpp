@@ -73,7 +73,21 @@ template<typename T>
 MPU6050 accelgyro;
 KalmanFilter *angel_filter;
 
-std::string RfCommAndroidMac = "5C:2E:59:D6:67:4B"; //this is default value, you may change it with your phone mac from settings.ini
+std::string RfCommAndroidMac = "00:...";// change it with your phone mac
+
+/*
+pairing your phone
+
+bluetoothctl
+devices
+scan on
+pair mac adress
+trust mac adress
+connect mac adress
+
+display services on phone
+sdptool browse mac adress
+*/
 
 uint32_t timer;
 bool m_IsRunning = false;
