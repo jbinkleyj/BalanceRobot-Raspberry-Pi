@@ -69,17 +69,19 @@ public class PIDSet {
 		textView_VS = paramView.findViewById(R.id.textView_VS);
 		textView_KM = paramView.findViewById(R.id.textView_KM);
 
+		int currentKM = (int)MainActivity.getKM();
+
 		seekBar_KP = paramView.findViewById(R.id.seekBar_KP);
 		seekBar_KP.setMax(100);
-		seekBar_KP.setProgress((int)MainActivity.getKP());
+		seekBar_KP.setProgress((int)(MainActivity.getKP() / currentKM * 10));
 
 		seekBar_KI = paramView.findViewById(R.id.seekBar_KI);
 		seekBar_KI.setMax(100);
-		seekBar_KI.setProgress((int)MainActivity.getKI());
+		seekBar_KI.setProgress((int)(MainActivity.getKI() / currentKM * 10));
 
 		seekBar_KD = paramView.findViewById(R.id.seekBar_KD);
 		seekBar_KD.setMax(100);
-		seekBar_KD.setProgress((int)MainActivity.getKD());
+		seekBar_KD.setProgress((int)(MainActivity.getKD() / currentKM * 10));
 
 		seekBar_VS = paramView.findViewById(R.id.seekBar_VS);
 		seekBar_VS.setMax(100);
@@ -87,7 +89,7 @@ public class PIDSet {
 
 		seekBar_KM= paramView.findViewById(R.id.seekBar_KM);
 		seekBar_KM.setMax(100);
-		seekBar_KM.setProgress((int)MainActivity.getKM());
+		seekBar_KM.setProgress(currentKM);
 
 
 		float KP =(float) seekBar_KP.getProgress();
