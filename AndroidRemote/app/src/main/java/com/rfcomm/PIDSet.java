@@ -26,6 +26,7 @@ public class PIDSet {
 	static ArrayList<Float> decibelStack;
 	static int mStackSize = 100;
 	static boolean is_Started = false;
+	static int currentKM;
 
 	public static void showPIDSetDialog(Context context, View parent) {
 		final String TAG = "BalanceRobotControl";
@@ -69,7 +70,7 @@ public class PIDSet {
 		textView_VS = paramView.findViewById(R.id.textView_VS);
 		textView_KM = paramView.findViewById(R.id.textView_KM);
 
-		int currentKM = (int)MainActivity.getKM();
+		currentKM = (int)MainActivity.getKM();
 
 		seekBar_KP = paramView.findViewById(R.id.seekBar_KP);
 		seekBar_KP.setMax(100);
@@ -93,15 +94,15 @@ public class PIDSet {
 
 
 		float KP =(float) seekBar_KP.getProgress();
-		String sKP = Float.toString(KP);
+		String sKP = Float.toString(KP * currentKM / 10);
 		textView_KP.setText("KP = " + sKP);
 
 		float KI =(float) seekBar_KI.getProgress();
-		String sKI = Float.toString(KI);
+		String sKI = Float.toString(KI * currentKM / 10);
 		textView_KI.setText("KI = " + sKI);
 
-		float KD =(float) seekBar_KD.getProgress() / 10;
-		String sKD = Float.toString(KD);
+		float KD =(float) seekBar_KD.getProgress();
+		String sKD = Float.toString(KD * currentKM / 10);
 		textView_KD.setText("KD = " + sKD);
 
 		float VS =(float) seekBar_VS.getProgress();
@@ -121,7 +122,7 @@ public class PIDSet {
                                           boolean fromUser) {
 				float KP =(float) seekBar_KP.getProgress();
 				MainActivity.setKP(KP);
-				String sKP = Float.toString(KP);
+				String sKP = Float.toString(KP * currentKM / 10);
 				textView_KP.setText("KP = " + sKP);
 			}
 
@@ -146,7 +147,7 @@ public class PIDSet {
                                           boolean fromUser) {
 				float KI =(float) seekBar_KI.getProgress();
 				MainActivity.setKI(KI);
-				String sKI = Float.toString(KI);
+				String sKI = Float.toString(KI * currentKM / 10);
 				textView_KI.setText("KI = " + sKI);
 			}
 
@@ -170,7 +171,7 @@ public class PIDSet {
                                           boolean fromUser) {
 				float KD =(float) seekBar_KD.getProgress() / 10;
 				MainActivity.setKD(KD);
-				String sKD = Float.toString(KD);
+				String sKD = Float.toString(KD * currentKM / 10);
 				textView_KD.setText("KD = " + sKD);
 			}
 
