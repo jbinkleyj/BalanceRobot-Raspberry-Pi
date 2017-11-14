@@ -101,7 +101,7 @@ public class PIDSet {
 		String sKI = Float.toString(KI * currentKM / 10);
 		textView_KI.setText("KI = " + sKI);
 
-		float KD =(float) seekBar_KD.getProgress();
+		float KD =(float) seekBar_KD.getProgress()  / 10;
 		String sKD = Float.toString(KD * currentKM / 10);
 		textView_KD.setText("KD = " + sKD);
 
