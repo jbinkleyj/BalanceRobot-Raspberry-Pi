@@ -249,7 +249,7 @@ void getStatusFromConfigurationFile() {
     Correction  = StringToNumber<double>(pt.get<std::string>("Robot.Correction"));
     RfCommAndroidMac = pt.get<std::string>("Robot.RfCommAndroidMac");
 
-    printf("aggKp: %f aggKi: %f aggKd: %f\n",aggKp,aggKi,aggKd);
+    printf("aggKp: %.2f aggKi: %.2f aggKd: %.2f\n",aggKp,aggKi,aggKd);
 
 }
 
@@ -257,7 +257,7 @@ void updateConfigurationFileFromStatus() {
     boost::property_tree::ptree pt;
     boost::property_tree::ini_parser::read_ini("settings.ini", pt);
 
-    printf("aggKp: %.1f aggKi: %.1f aggKd: %.1f\n",aggKp,aggKi,aggKd);
+    printf("aggKp: %.2f aggKi: %.2f aggKd: %.2f\n",aggKp,aggKi,aggKd);
 
     pt.put("Robot.aggKp", aggKp);
     pt.put("Robot.aggKi", aggKi);
@@ -274,7 +274,7 @@ void updateConfigurationFileFromStatus() {
 void createConfigurationFile() {
     boost::property_tree::ptree pt;
 
-    printf("aggKp: %.1f aggKi: %.1f aggKd: %.1f\n",aggKp,aggKi,aggKd);
+    printf("aggKp: %.2f aggKi: %.2f aggKd: %.2f\n",aggKp,aggKi,aggKd);
 
     //create with default parameters
     pt.put("Robot.aggKp", aggKp);
