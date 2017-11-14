@@ -34,7 +34,7 @@
 
 #define SLEEP_PERIOD 1000 //us;
 #define SERIAL_TIME 50 //ms
-#define SAMPLE_TIME 1 //ms
+#define SAMPLE_TIME 10 //ms
 
 #define KF_VAR_ACCEL 0.0075 // Variance of pressure acceleration noise input.
 #define KF_VAR_MEASUREMENT 0.05
@@ -57,7 +57,7 @@
 MPU6050 accelgyro;
 Kalman kalmanX;
 Kalman kalmanY;
-std::string RfCommAndroidMac = "5C....";// change it with your phone mac
+std::string RfCommAndroidMac = "5C:2E:59:D6:67:4B";// change it with your phone mac
 
 bool m_IsRunning = false;
 bool m_IsMainThreadRunning = false;
@@ -87,6 +87,8 @@ double Setpoint = 0.0;
 double aggKp = 50.0;
 double aggKi = 75.0;
 double aggKd = 2.0;
+double aggVs = 10.0; //Velocity wheel
+double aggKm = 1.0; //Velocity wheel
 double angle_error = 0.0;
 double Angle_MPU = 0.0;
 double Gyro_MPU = 0.0;
@@ -98,6 +100,8 @@ double gyroXangle, gyroYangle; // Angle calculate using the gyro only
 double compAngleX, compAngleY; // Calculated angle using a complementary filter
 double kalAngleX, kalAngleY; // Calculated angle using a Kalman filter
 double Input, Output;
+
+double DataAvg[3];
 
 //Specify the links and initial tuning parameters
 PID balancePID(&Input, &Output, &Setpoint, aggKp, aggKi, aggKd, DIRECT);
@@ -114,6 +118,18 @@ template<typename T>
         throw e;
      }
      return valor;
+  }
+
+  template<class T>
+  const T& constrain(const T& x, const T& a, const T& b) {
+      if(x < a) {
+          return a;
+      }
+      else if(b < x) {
+          return b;
+      }
+      else
+          return x;
   }
 
 unsigned int millis()
@@ -200,22 +216,6 @@ void disConnetRfComm() {
     }
 }
 
-void encodeL (void)
-{
-    if (digitalRead(SPD_PUL_L))
-        Speed_L += 1;
-    else
-        Speed_L -= 1;
-}
-
-void encodeR (void)
-{
-    if (digitalRead(SPD_PUL_R))
-        Speed_R += 1;
-    else
-        Speed_R -= 1;
-}
-
 uchar *trim(uchar *s)
 {
   uchar *first;
@@ -244,6 +244,8 @@ void getStatusFromConfigurationFile() {
     aggKp       = StringToNumber<double>(pt.get<std::string>("Robot.aggKp"));
     aggKi       = StringToNumber<double>(pt.get<std::string>("Robot.aggKi"));
     aggKd       = StringToNumber<double>(pt.get<std::string>("Robot.aggKd"));
+    aggVs       = StringToNumber<double>(pt.get<std::string>("Robot.aggVs"));
+    aggKm       = StringToNumber<double>(pt.get<std::string>("Robot.aggKm"));
     Correction  = StringToNumber<double>(pt.get<std::string>("Robot.Correction"));
     RfCommAndroidMac = pt.get<std::string>("Robot.RfCommAndroidMac");
 
@@ -260,6 +262,8 @@ void updateConfigurationFileFromStatus() {
     pt.put("Robot.aggKp", aggKp);
     pt.put("Robot.aggKi", aggKi);
     pt.put("Robot.aggKd", aggKd);
+    pt.put("Robot.aggVs", aggVs);
+    pt.put("Robot.aggKm", aggKm);
     pt.put("Robot.Correction", Correction);
     pt.put("Robot.RfCommAndroidMac", RfCommAndroidMac);
 
@@ -276,6 +280,8 @@ void createConfigurationFile() {
     pt.put("Robot.aggKp", aggKp);
     pt.put("Robot.aggKi", aggKi);
     pt.put("Robot.aggKd", aggKd);
+    pt.put("Robot.aggVs", aggVs);
+    pt.put("Robot.aggKm", aggKm);
     pt.put("Robot.Correction", Correction);
     pt.put("Robot.RfCommAndroidMac", RfCommAndroidMac);
 
@@ -363,11 +369,13 @@ void UpdatePID()
     case 0x01:aggKp = NewPara;break;
     case 0x02:aggKi = NewPara;break;
     case 0x03:aggKd = NewPara;break;
+    case 0x04:aggVs = NewPara;break;
+    case 0x05:aggKm = NewPara;break;
     default:break;
   }
 
   updateConf();
-  sprintf(buf,"Update PID(0x%02X) Kp: %0.2f Ki: %0.2f Kd: %0.2f",SerialPacket.m_Buffer[3],aggKp,aggKi,aggKd);
+  sprintf(buf,"Update PID(0x%02X) Kp: %0.2f Ki: %0.2f Kd: %0.2f  Vs: %0.2f Km: %0.2f",SerialPacket.m_Buffer[3],aggKp,aggKi,aggKd,aggVs,aggKm);
   printf("%s\n",buf);
 }
 
@@ -622,40 +630,88 @@ void calculateGyro()
     if (gyroYangle < -180 || gyroYangle > 180)
       gyroYangle = kalAngleY;
 
-    Angle_MPU = kalAngleX;
+    DataAvg[2] = DataAvg[1];
+    DataAvg[1] = DataAvg[0];
+    DataAvg[0] = kalAngleX;
 
+    Angle_MPU = (DataAvg[0]+DataAvg[1]+DataAvg[2])/3;
+
+    Gyro_MPU = gyroXrate;
+    Temperature = (double)accelgyro.getTemperature() / 340.0 + 36.53;
     //printf("Angle_MPU: %.2f  Time_Diff: %.1f\n",Angle_MPU,timediff);
-    //Gyro_MPU = gyroXrate;
-    //Temperature = (double)accelgyro.getTemperature() / 340.0 + 36.53;
+
 }
 
 
+/*
+
+float K = 1.064 ;       //1.9 * 1.12;  // wheels 80mm
+//float K = 1.9 ;      // wheels 100mm
+float Kp = 15;
+float Ki = 6.9;
+float Kd = 20;
+float Kp_Wheel = -0.025;
+float Kd_Wheel = -9;
+
+int last_error = 0;
+int integrated_error = 0;
+float pTerm=0, iTerm=0, dTerm=0, pTerm_Wheel=0, dTerm_Wheel=0;
+
+int updatePid(float targetPosition, float currentPosition)   {
+  float error = targetPosition - currentPosition;
+  pTerm = Kp * error;
+  integrated_error += error;
+  iTerm = Ki * constrain(integrated_error, -GUARD_GAIN, GUARD_GAIN);
+  dTerm = Kd * (error - last_error);
+  last_error = error;
+  pTerm_Wheel = Kp_Wheel * count;           //  -(Kxp/100) * count;
+  dTerm_Wheel = Kd_Wheel * (count - last_count);
+  last_count = count;
+  return -constrain(K*(pTerm + iTerm + dTerm + pTerm_Wheel + dTerm_Wheel), -255, 255);
+}
+}*/
+
+void encodeL (void)
+{
+    if (digitalRead(SPD_PUL_L))
+        Speed_L += 1;
+    else
+        Speed_L -= 1;
+}
+
+void encodeR (void)
+{
+    if (digitalRead(SPD_PUL_R))
+        Speed_R += 1;
+    else
+        Speed_R -= 1;
+}
+
 void PWM_Calculate()
 {
-    Speed_Diff = abs(Speed_R) - abs(Speed_L);
-    Speed_Diff_ALL += Speed_Diff;
-
+    //forward: l= - ; r= +
+    Speed_Diff = Speed_R + Speed_L;
     Input = Angle_MPU;
 
     angle_error = abs(Setpoint - Input); //distance away from setpoint
 
     if (angle_error < 10)
-    {  //we're close to setpoint, use conservative tuning parameters
-        balancePID.SetTunings(aggKp/3,  aggKi , aggKd / 12);
+    {   //we're close to setpoint, use conservative tuning parameters
+        balancePID.SetTunings(aggKp/3, aggKi/3, aggKd/3);
     }
     else
-    {     //we're far from setpoint, use aggressive tuning parameters
-        balancePID.SetTunings(aggKp, 3 * aggKi, aggKd / 4);
+    {   //we're far from setpoint, use aggressive tuning parameters
+        balancePID.SetTunings(aggKp, aggKi, aggKd);
     }
 
     balancePID.Compute();   
 
-    mSpeed = (int)Output;
+    mSpeed = -1*(int)Output;
 
-    pwm_r = mSpeed - Speed_Diff;
-    pwm_l = mSpeed + Speed_Diff;
+    pwm_l = mSpeed + aggVs * Speed_Diff;
+    pwm_r = mSpeed - aggVs * Speed_Diff;
 
-    //printf("Angle_MPU: %.2f  pwm_r: %d pwm_l: %d  Speed_Diff: %d\n",Angle_MPU,pwm_r,pwm_l,Speed_Diff);
+    printf("Angle_MPU: %.2f  pwm_r: %d pwm_l: %d  Speed_Diff: %d  Speed_L: %d  Speed_R: %d\n",Angle_MPU,pwm_r,pwm_l,Speed_Diff,Speed_L,Speed_R);
 
     Speed_L = 0;
     Speed_R = 0;
@@ -696,8 +752,8 @@ void Robot_Control()
         pwm_l = -pwm_l;
     }
 
-    sprintf(buf, "Data:%d:%d:%0.2f:%d:%d:%d:%d:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:",
-    pwm_l, pwm_r,Angle_MPU,Speed_Need,Turn_Need,Speed_L,Speed_R,aggKp,aggKi,aggKd,Temperature,Correction,angle_error);
+    sprintf(buf, "Data:%d:%d:%0.2f:%d:%d:%d:%d:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:",
+    pwm_l, pwm_r,Angle_MPU,Speed_Need,Turn_Need,Speed_L,Speed_R,aggKp,aggKi,aggKd,aggVs,aggKm,Temperature,Correction,angle_error);
 
     if( Angle_MPU > 45 || Angle_MPU < -45 || !m_IsRunning)
     {
@@ -723,7 +779,7 @@ PI_THREAD (serialThread)
 }
 
 PI_THREAD (mainThread)
-{
+{   
     while (1)
     {
         if(!m_IsMainThreadRunning)
@@ -840,7 +896,9 @@ void init()
 
         balancePID.SetMode(AUTOMATIC);
         balancePID.SetSampleTime(SAMPLE_TIME);
-        balancePID.SetOutputLimits(-pwnLimit, pwnLimit);
+        balancePID.SetOutputLimits(-pwnLimit, pwnLimit);        
+
+        DataAvg[0]=0; DataAvg[1]=0; DataAvg[2]=0;
 
         if(isMPU6050_Found)
         {
