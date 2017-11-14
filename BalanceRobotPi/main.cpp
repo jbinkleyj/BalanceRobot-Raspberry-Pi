@@ -34,7 +34,7 @@
 
 #define SLEEP_PERIOD 1000 //us;
 #define SERIAL_TIME 100 //ms
-#define SAMPLE_TIME 10 //ms
+#define SAMPLE_TIME 1 //ms
 int pwnLimit = 255;
 
 #define KF_VAR_ACCEL 0.0075 // Variance of pressure acceleration noise input.
@@ -84,10 +84,10 @@ double RAD_TO_DEG = 57.2958;
 double timediff = 0.0;
 double Correction = 0.0;
 double Setpoint = 0.0;
-double aggKp = 40.0;
-double aggKi = 75.0;
-double aggKd = 1.8;
-double aggVs = 10.0; //Velocity wheel
+double aggKp = 75.0;
+double aggKi = 100.0;
+double aggKd = 0.35;
+double aggVs = 15.0; //Velocity wheel
 double aggKm = 1.0; //Velocity wheel
 double angle_error = 0.0;
 double Angle_MPU = 0.0;
@@ -688,7 +688,9 @@ void PWM_Calculate()
 {
     //forward: l= - ; r= +
     Speed_Diff = Speed_R + Speed_L;
-    Input = Angle_MPU;    
+    Input = Angle_MPU;
+
+    Setpoint = Correction;
 
     angle_error = abs(Setpoint - Input); //distance away from setpoint
 
