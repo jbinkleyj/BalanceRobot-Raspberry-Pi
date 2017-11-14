@@ -33,8 +33,8 @@
 //sudo apt-get install libbluetooth-dev
 
 #define SLEEP_PERIOD 1000 //us;
-#define SERIAL_TIME 50 //ms
-#define SAMPLE_TIME 5 //ms
+#define SERIAL_TIME 100 //ms
+#define SAMPLE_TIME 9 //ms
 
 #define KF_VAR_ACCEL 0.0075 // Variance of pressure acceleration noise input.
 #define KF_VAR_MEASUREMENT 0.05
@@ -84,10 +84,10 @@ double RAD_TO_DEG = 57.2958;
 double timediff = 0.0;
 double Correction = 0.0;
 double Setpoint = 0.0;
-double aggKp = 50.0;
-double aggKi = 75.0;
-double aggKd = 2.0;
-double aggVs = 1.0; //Velocity wheel
+double aggKp = 40.0;
+double aggKi = 190.0;
+double aggKd = 1.8;
+double aggVs = 10.0; //Velocity wheel
 double aggKm = 1.0; //Velocity wheel
 double angle_error = 0.0;
 double Angle_MPU = 0.0;
@@ -638,7 +638,7 @@ void calculateGyro()
 
     Gyro_MPU = gyroXrate;
     Temperature = (double)accelgyro.getTemperature() / 340.0 + 36.53;
-    printf("Angle_MPU: %.2f  Time_Diff: %.1f\n",Angle_MPU,timediff);
+   // printf("Angle_MPU: %.2f  Time_Diff: %.1f\n",Angle_MPU,timediff);
 
 }
 
@@ -712,7 +712,7 @@ void PWM_Calculate()
     pwm_l = mSpeed + aggVs * Speed_Diff;
     pwm_r = mSpeed - aggVs * Speed_Diff;
 
-    //printf("Angle_MPU: %.2f  pwm_r: %d pwm_l: %d  Speed_Diff: %d  Speed_L: %d  Speed_R: %d\n",Angle_MPU,pwm_r,pwm_l,Speed_Diff,Speed_L,Speed_R);
+   // printf("Angle_MPU: %.2f   pwm_r: %d   pwm_l: %d\n",Angle_MPU,pwm_r,pwm_l);
 
     Speed_L = 0;
     Speed_R = 0;
@@ -729,32 +729,29 @@ void Robot_Control()
 
     if (pwm_r>0)
     {
-        digitalWrite(PWMR1, LOW);
-        digitalWrite(PWMR2, HIGH);
+        digitalWrite(PWMR1, HIGH);
+        digitalWrite(PWMR2, LOW);
     }
 
     if (pwm_l>0)
     {
-        digitalWrite(PWML1, HIGH);
-        digitalWrite(PWML2, LOW);
+        digitalWrite(PWML1, LOW);
+        digitalWrite(PWML2, HIGH);
     }
 
     if (pwm_r<0)
     {
-        digitalWrite(PWMR1, HIGH);
-        digitalWrite(PWMR2, LOW);
+        digitalWrite(PWMR1, LOW);
+        digitalWrite(PWMR2, HIGH);
         pwm_r =- pwm_r;  //cchange to positive
     }
 
     if (pwm_l<0)
     {
-        digitalWrite(PWML1, LOW);
-        digitalWrite(PWML2, HIGH);
+        digitalWrite(PWML1, HIGH);
+        digitalWrite(PWML2, LOW);
         pwm_l = -pwm_l;
     }
-
-    sprintf(buf, "Data:%d:%d:%0.2f:%d:%d:%d:%d:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:",
-    pwm_l, pwm_r,Angle_MPU,Speed_Need,Turn_Need,Speed_L,Speed_R,aggKp,aggKi,aggKd,aggVs,aggKm,Temperature,Correction,angle_error);
 
     if( Angle_MPU > 45 || Angle_MPU < -45 || !m_IsRunning)
     {
@@ -772,7 +769,11 @@ PI_THREAD (serialThread)
     while (m_IsSerialThreadRunning)
     {
         uchar buffer[128];
-        getData(buffer);        
+        getData(buffer);
+
+        sprintf(buf, "Data:%d:%d:%0.2f:%d:%d:%d:%d:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:",
+        pwm_l, pwm_r,Angle_MPU,Speed_Need,Turn_Need,Speed_L,Speed_R,aggKp,aggKi,aggKd,aggVs,aggKm,Temperature,Correction,angle_error);
+
         sendData(buf,strlen(buf));
 
         ::usleep(SLEEP_PERIOD * SERIAL_TIME);
@@ -964,3 +965,4 @@ int main(int argc, char *argv[])
         delay(1000);
     }
 }*/
+
