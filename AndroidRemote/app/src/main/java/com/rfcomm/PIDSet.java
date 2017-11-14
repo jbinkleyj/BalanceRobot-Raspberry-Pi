@@ -32,10 +32,15 @@ public class PIDSet {
 		final TextView textView_KP;
 		final TextView textView_KI;
 		final TextView textView_KD;
+		final TextView textView_VS;
+		final TextView textView_KM;
+
 
 		final SeekBar seekBar_KP;
 		final SeekBar seekBar_KI;
 		final SeekBar seekBar_KD;
+		final SeekBar seekBar_VS;
+		final SeekBar seekBar_KM;
 
 		View paramView = View.inflate(context, R.layout.param_dlg, null);
 		LinearLayout contentView = paramView
@@ -61,6 +66,8 @@ public class PIDSet {
 		textView_KP = paramView.findViewById(R.id.textView_KP);
 		textView_KI = paramView.findViewById(R.id.textView_KI);
 		textView_KD = paramView.findViewById(R.id.textView_KD);
+		textView_VS = paramView.findViewById(R.id.textView_VS);
+		textView_KM = paramView.findViewById(R.id.textView_KM);
 
 		seekBar_KP = paramView.findViewById(R.id.seekBar_KP);
 		seekBar_KP.setMax(100);
@@ -74,6 +81,14 @@ public class PIDSet {
 		seekBar_KD.setMax(100);
 		seekBar_KD.setProgress((int)MainActivity.getKD());
 
+		seekBar_VS = paramView.findViewById(R.id.seekBar_VS);
+		seekBar_VS.setMax(100);
+		seekBar_VS.setProgress((int)MainActivity.getVS());
+
+		seekBar_KM= paramView.findViewById(R.id.seekBar_KM);
+		seekBar_KM.setMax(100);
+		seekBar_KM.setProgress((int)MainActivity.getKM());
+
 
 		float KP =(float) seekBar_KP.getProgress();
 		String sKP = Float.toString(KP);
@@ -86,6 +101,17 @@ public class PIDSet {
 		float KD =(float) seekBar_KD.getProgress() / 10;
 		String sKD = Float.toString(KD);
 		textView_KD.setText("KD = " + sKD);
+
+		float VS =(float) seekBar_VS.getProgress();
+		if(VS == 0)VS = 1;
+		String sVS = Float.toString(VS);
+		textView_VS.setText("VS = " + sVS);
+
+		float KM =(float) seekBar_KM.getProgress() / 10;
+		if(KM == 0)KM = 1;
+		String sKM = Float.toString(KM);
+		textView_KM.setText("KM = " + sKM);
+
 
 		OnSeekBarChangeListener seekBar_KP_Listener = new OnSeekBarChangeListener() {
 			@Override
@@ -159,6 +185,56 @@ public class PIDSet {
 		};
 
 		seekBar_KD.setOnSeekBarChangeListener(seekBar_KD_Listener);
+
+		OnSeekBarChangeListener seekBar_VS_Listener = new OnSeekBarChangeListener() {
+			@Override
+			public void onProgressChanged(SeekBar seekBar, int progress,
+										  boolean fromUser) {
+				float VS =(float) seekBar_VS.getProgress();
+				if(VS == 0)VS = 1;
+				MainActivity.setVS(VS);
+				String sVS = Float.toString(VS);
+				textView_VS.setText("VS = " + sVS);
+			}
+
+			@Override
+			public void onStartTrackingTouch(SeekBar seekBar) {
+				// Toast.makeText(getApplicationContext(), "onStopTrackingTouch",Toast.LENGTH_SHORT).show();
+			}
+
+			@Override
+			public void onStopTrackingTouch(SeekBar seekBar) {
+				// Toast.makeText(getApplicationContext(), "onStopTrackingTouch",Toast.LENGTH_SHORT).show();
+			}
+
+		};
+
+		seekBar_VS.setOnSeekBarChangeListener(seekBar_VS_Listener);
+
+		OnSeekBarChangeListener seekBar_KM_Listener = new OnSeekBarChangeListener() {
+			@Override
+			public void onProgressChanged(SeekBar seekBar, int progress,
+										  boolean fromUser) {
+				float KM =(float) seekBar_KM.getProgress() / 10;
+				if(KM == 0)KM = 1;
+				MainActivity.setKM(KM);
+				String sKM = Float.toString(KM);
+				textView_KM.setText("KM = " + sKM);
+			}
+
+			@Override
+			public void onStartTrackingTouch(SeekBar seekBar) {
+				// Toast.makeText(getApplicationContext(), "onStopTrackingTouch",Toast.LENGTH_SHORT).show();
+			}
+
+			@Override
+			public void onStopTrackingTouch(SeekBar seekBar) {
+				// Toast.makeText(getApplicationContext(), "onStopTrackingTouch",Toast.LENGTH_SHORT).show();
+			}
+
+		};
+
+		seekBar_KM.setOnSeekBarChangeListener(seekBar_KM_Listener);
 
 
 		okBtn.setOnClickListener(new OnClickListener() {
