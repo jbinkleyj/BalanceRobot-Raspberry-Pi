@@ -60,6 +60,8 @@ public class MainActivity extends ActionBarActivity
 	public static float Kp = 0;
 	public static float Ki = 0;
 	public static float Kd = 0;
+	public static float Vs = 0;
+	public static float Km = 0;
 	public static float Angle_Error = 0;
 
 	private int speed1;
@@ -606,6 +608,8 @@ public class MainActivity extends ActionBarActivity
 			String KP = "0";
 			String KI = "0";
 			String KD = "0";
+			String VS = "0";
+			String KM = "0";
 			String Correction = "0";
 			String Error = "0";
 
@@ -657,6 +661,14 @@ public class MainActivity extends ActionBarActivity
 			}
 			if(token.hasMoreTokens())
 			{
+				VS = token.nextToken();
+			}
+			if(token.hasMoreTokens())
+			{
+				KM = token.nextToken();
+			}
+			if(token.hasMoreTokens())
+			{
 				Temperature = token.nextToken();
 			}
 			if(token.hasMoreTokens())
@@ -668,16 +680,18 @@ public class MainActivity extends ActionBarActivity
 				Error = token.nextToken();
 			}
 
-
 			Kp = Float.valueOf(KP.replace(",","."));
 			Ki = Float.valueOf(KI.replace(",","."));
 			Kd = Float.valueOf(KD.replace(",","."));
+			Vs = Float.valueOf(VS.replace(",","."));
+			Km = Float.valueOf(KM.replace(",","."));
+
 			Angle_Error = Float.valueOf(Error.replace(",","."));
 			PIDSet.addValue(Angle_Error);
 
 			//Log.e(TAG,"KP : " + Kp + "  KI : " + Ki + "  Kd : " + Kd );
 
-			tmpmsg =  "KP : " + Kp + "  KI : " + Ki + "  KD : " + Kd + "\n"
+			tmpmsg =  "KP : " + Kp + "  KI : " + Ki + "  KD : " + Kd + "  VS : " + Vs + "  KM : " + Km + "\n"
 					+ "PwmL: " + Pwml +  "  PwmR: " + Pwmr + "  SpN: : " + Speed_Need +  "  TnN: " + Turn_Need + "\n"
 					+ "Temp: " + Temperature +  "  Correction: " + Correction +  "  Error: " + Error;
 
@@ -740,6 +754,42 @@ public class MainActivity extends ActionBarActivity
 		float ikd = KD * 100;
 		commandPacketBlueTooth[3] = (byte)(ikd / 255);
 		commandPacketBlueTooth[4] = (byte)(ikd % 255);
+		//commandPacketBlueTooth[4] = 0x03;
+		commandPacketBlueTooth[5] = exclusiveOr(commandPacketBlueTooth);
+		if (mBtService != null)
+			mBtService.sendCmd(commandPacketBlueTooth);
+	}
+
+	public static float getVS() {
+		return Vs;
+	}
+
+	public static void setVS(float VS) {
+
+		Vs = VS;
+		commandPacketBlueTooth[1] = 0x02;
+		commandPacketBlueTooth[2] = 0x04;
+		float ivs = VS * 100;
+		commandPacketBlueTooth[3] = (byte)(ivs / 255);
+		commandPacketBlueTooth[4] = (byte)(ivs % 255);
+		//commandPacketBlueTooth[4] = 0x03;
+		commandPacketBlueTooth[5] = exclusiveOr(commandPacketBlueTooth);
+		if (mBtService != null)
+			mBtService.sendCmd(commandPacketBlueTooth);
+	}
+
+	public static float getKM() {
+		return Km * 10;
+	}
+
+	public static void setKM(float KM) {
+
+		Kd = KM;
+		commandPacketBlueTooth[1] = 0x02;
+		commandPacketBlueTooth[2] = 0x05;
+		float ikm = KM * 100;
+		commandPacketBlueTooth[3] = (byte)(ikm / 255);
+		commandPacketBlueTooth[4] = (byte)(ikm % 255);
 		//commandPacketBlueTooth[4] = 0x03;
 		commandPacketBlueTooth[5] = exclusiveOr(commandPacketBlueTooth);
 		if (mBtService != null)
