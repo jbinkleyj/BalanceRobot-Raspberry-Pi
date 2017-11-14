@@ -13,18 +13,19 @@ import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
-import com.jjoe64.graphview.GraphView;
-import com.jjoe64.graphview.LegendRenderer;
-import com.jjoe64.graphview.series.DataPoint;
-import com.jjoe64.graphview.series.LineGraphSeries;
+import org.eazegraph.lib.charts.ValueLineChart;
+import org.eazegraph.lib.models.ValueLinePoint;
+import org.eazegraph.lib.models.ValueLineSeries;
+
+import java.util.ArrayList;
 
 public class PIDSet {
 
-	static GraphView graph;
-	static LineGraphSeries<DataPoint> mSeries;
-	static double graph2LastXValue = 0;
-	static int    maxXValue = 100;
-	static boolean isStarted = false;
+
+	static ValueLineChart mCubicValueLineChart;
+	static ArrayList<Float> decibelStack;
+	static int mStackSize = 100;
+	static boolean is_Started = false;
 
 	public static void showPIDSetDialog(Context context, View parent) {
 		final String TAG = "BalanceRobotControl";
@@ -41,28 +42,15 @@ public class PIDSet {
 				.findViewById(R.id.param_dlg_content_view);
 		View algoLineParamView = View
 				.inflate(context, R.layout.pidset, null);
+		mCubicValueLineChart = algoLineParamView.findViewById(R.id.cubiclinechart);
+		mCubicValueLineChart.setBackgroundColor(Color.argb(255,224,224,224));
 
-		graph = (GraphView) algoLineParamView.findViewById(R.id.graph);
-		graph.setBackgroundColor(Color.WHITE);
-		graph.getViewport().setMinX(0);
-		graph.getViewport().setMaxX(maxXValue);
-		graph.getViewport().setScrollable(true);
-		graph.getViewport().setScalable(true);
+		resetStack();
 
-		graph.getGridLabelRenderer().setGridColor(Color.DKGRAY);
-		graph.getGridLabelRenderer().reloadStyles();
+		is_Started = true;
 
-		graph.getViewport().setXAxisBoundsManual(true);
-	    graph.onDataChanged(true, true);
-
-		mSeries = new LineGraphSeries<>();
-		mSeries.setThickness(6);
-		mSeries.setColor(Color.BLUE);
-
-		graph.addSeries(mSeries);
-
-		//final EditText algoLineEdit = (EditText) algoLineParamView
-				//.findViewById(R.id.algo_line_edit);
+	    //final EditText algoLineEdit = (EditText) algoLineParamView
+	    //.findViewById(R.id.algo_line_edit);
 		//algoLineEdit.setText(component.getKAngle() + "");
 		contentView.addView(algoLineParamView);
 		Button okBtn = paramView.findViewById(R.id.param_dlg_ok);
@@ -98,8 +86,6 @@ public class PIDSet {
 		float KD =(float) seekBar_KD.getProgress() / 10;
 		String sKD = Float.toString(KD);
 		textView_KD.setText("KD = " + sKD);
-
-		isStarted = true;
 
 		OnSeekBarChangeListener seekBar_KP_Listener = new OnSeekBarChangeListener() {
 			@Override
@@ -198,21 +184,34 @@ public class PIDSet {
 		pinParamDialog.showAtLocation(parent, Gravity.CENTER, 0, 0);
 	}
 
-	public static void addValue(double value) {
-
-		if(isStarted)
-		{
-			mSeries.appendData(new DataPoint(graph2LastXValue, value), true, maxXValue);
-
-			if (graph2LastXValue >= maxXValue) {
-				mSeries.resetData(new DataPoint[]{});
-				graph2LastXValue = 0;
-			}
-			else
-				graph2LastXValue += 1d;
-
-			graph.getViewport().setMinX(0);
-			graph.getViewport().setMaxX(maxXValue);
+	static void resetStack() {
+		decibelStack = new ArrayList<>();
+		for (int i =0; i < mStackSize; i++) {
+			decibelStack.add(0f);
 		}
 	}
+
+	static synchronized void addValue(float decibel) {
+
+		if(is_Started)
+		{
+			if (decibelStack.size() > mStackSize) {
+				decibelStack.remove(0);
+			}
+			decibelStack.add(decibelStack.size(), decibel);
+
+			refreshGraph();
+		}
+	}
+
+	static void refreshGraph() {
+		mCubicValueLineChart.clearChart();
+		final ValueLineSeries series = new ValueLineSeries();
+		series.setColor(Color.BLUE);
+		for (float i : decibelStack) {
+			series.addPoint(new ValueLinePoint(String.valueOf(i), i));
+		}
+		mCubicValueLineChart.addSeries(series);
+	}
+
 }
