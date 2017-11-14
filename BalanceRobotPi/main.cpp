@@ -34,7 +34,7 @@
 
 #define SLEEP_PERIOD 1000 //us;
 #define SERIAL_TIME 50 //ms
-#define SAMPLE_TIME 10 //ms
+#define SAMPLE_TIME 5 //ms
 
 #define KF_VAR_ACCEL 0.0075 // Variance of pressure acceleration noise input.
 #define KF_VAR_MEASUREMENT 0.05
@@ -87,7 +87,7 @@ double Setpoint = 0.0;
 double aggKp = 50.0;
 double aggKi = 75.0;
 double aggKd = 2.0;
-double aggVs = 10.0; //Velocity wheel
+double aggVs = 1.0; //Velocity wheel
 double aggKm = 1.0; //Velocity wheel
 double angle_error = 0.0;
 double Angle_MPU = 0.0;
@@ -366,9 +366,9 @@ void UpdatePID()
 
   switch(SerialPacket.m_Buffer[3])
   {
-    case 0x01:aggKp = NewPara;break;
-    case 0x02:aggKi = NewPara;break;
-    case 0x03:aggKd = NewPara;break;
+    case 0x01:aggKp = aggKm * NewPara;break;
+    case 0x02:aggKi = aggKm * NewPara;break;
+    case 0x03:aggKd = aggKm * NewPara;break;
     case 0x04:aggVs = NewPara;break;
     case 0x05:aggKm = NewPara;break;
     default:break;
@@ -638,12 +638,13 @@ void calculateGyro()
 
     Gyro_MPU = gyroXrate;
     Temperature = (double)accelgyro.getTemperature() / 340.0 + 36.53;
-    //printf("Angle_MPU: %.2f  Time_Diff: %.1f\n",Angle_MPU,timediff);
+    printf("Angle_MPU: %.2f  Time_Diff: %.1f\n",Angle_MPU,timediff);
 
 }
 
 
 /*
+alternate pid calculation
 
 float K = 1.064 ;       //1.9 * 1.12;  // wheels 80mm
 //float K = 1.9 ;      // wheels 100mm
@@ -691,7 +692,7 @@ void PWM_Calculate()
 {
     //forward: l= - ; r= +
     Speed_Diff = Speed_R + Speed_L;
-    Input = Angle_MPU;
+    Input = Angle_MPU;    
 
     angle_error = abs(Setpoint - Input); //distance away from setpoint
 
@@ -711,7 +712,7 @@ void PWM_Calculate()
     pwm_l = mSpeed + aggVs * Speed_Diff;
     pwm_r = mSpeed - aggVs * Speed_Diff;
 
-    printf("Angle_MPU: %.2f  pwm_r: %d pwm_l: %d  Speed_Diff: %d  Speed_L: %d  Speed_R: %d\n",Angle_MPU,pwm_r,pwm_l,Speed_Diff,Speed_L,Speed_R);
+    //printf("Angle_MPU: %.2f  pwm_r: %d pwm_l: %d  Speed_Diff: %d  Speed_L: %d  Speed_R: %d\n",Angle_MPU,pwm_r,pwm_l,Speed_Diff,Speed_L,Speed_R);
 
     Speed_L = 0;
     Speed_R = 0;
