@@ -101,7 +101,7 @@ public class PIDSet {
 		String sKI = Float.toString(KI * currentKM / 10);
 		textView_KI.setText("KI = " + sKI);
 
-		float KD =(float) seekBar_KD.getProgress()  / 10;
+		float KD =(float) seekBar_KD.getProgress()  / 100;
 		String sKD = Float.toString(KD * currentKM / 10);
 		textView_KD.setText("KD = " + sKD);
 
@@ -169,7 +169,7 @@ public class PIDSet {
 			@Override
 			public void onProgressChanged(SeekBar seekBar, int progress,
                                           boolean fromUser) {
-				float KD =(float) seekBar_KD.getProgress() / 10;
+				float KD =(float) seekBar_KD.getProgress() / 100;
 				MainActivity.setKD(KD);
 				String sKD = Float.toString(KD * currentKM / 10);
 				textView_KD.setText("KD = " + sKD);
