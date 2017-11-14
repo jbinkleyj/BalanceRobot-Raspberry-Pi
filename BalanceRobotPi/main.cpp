@@ -32,11 +32,12 @@
 //#include <wiringPiI2C.h>
 //sudo apt-get install libbluetooth-dev
 
-static const unsigned int SLEEP_PERIOD = 1000;
-static const unsigned int SLEEP_COUNTER= 100;
+#define SLEEP_PERIOD 1000 //us;
+#define SERIAL_TIME 50 //ms
+#define SAMPLE_TIME 1 //ms
 
 #define RESTRICT_PITCH
-#define SAMPLE_TIME 1 //ms
+
 #define	COUNT_KEY	0
 
 //physcal pins
@@ -371,10 +372,7 @@ void RobotDirection()
 }
 
 void UpdatePID()
-{
-  if(!m_IsRunning)
-      return;
-
+{  
   unsigned int Upper,Lower;
   double NewPara;
   Upper = SerialPacket.m_Buffer[2];
@@ -670,14 +668,14 @@ void PWM_Calculate()
         balancePID.SetTunings(aggKp, 3 * aggKi, aggKd / 4);
     }
 
-    balancePID.Compute();
-
-    //printf("Angle_MPU : %.2f  Output : %.1f  Speed_Diff: %d\n",Angle_MPU,Output,Speed_Diff);
+    balancePID.Compute();   
 
     mSpeed = (int)Output;
 
-    pwm_r = mSpeed;
-    pwm_l = mSpeed;
+    pwm_r = mSpeed - Speed_Diff;
+    pwm_l = mSpeed + Speed_Diff;
+
+    printf("Angle_MPU: %.2f  pwm_r: %d pwm_l: %d  Speed_Diff: %d\n",Angle_MPU,pwm_r,pwm_l,Speed_Diff);
 
     Speed_L = 0;
     Speed_R = 0;
@@ -718,6 +716,9 @@ void Robot_Control()
         pwm_l = -pwm_l;
     }
 
+    sprintf(buf, "Data:%d:%d:%0.2f:%d:%d:%d:%d:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:",
+    pwm_l, pwm_r,Angle_MPU,Speed_Need,Turn_Need,Speed_L,Speed_R,aggKp,aggKi,aggKd,Temperature,Correction,angle_error);
+
     if( Angle_MPU > 45 || Angle_MPU < -45 || !m_IsRunning)
     {
         pwm_l = 0;
@@ -734,14 +735,10 @@ PI_THREAD (serialThread)
     while (m_IsSerialThreadRunning)
     {
         uchar buffer[128];
-        getData(buffer);
-
-        sprintf(buf, "Data:%d:%d:%0.2f:%d:%d:%d:%d:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:",
-        pwm_l, pwm_r,Angle_MPU,Speed_Need,Turn_Need,Speed_L,Speed_R,aggKp,aggKi,aggKd,Temperature,Correction,angle_error);
+        getData(buffer);        
         sendData(buf,strlen(buf));
-        //printf("%s\n",buf);
 
-        ::usleep(SLEEP_PERIOD * SLEEP_COUNTER);
+        ::usleep(SLEEP_PERIOD * SERIAL_TIME);
     }
 }
 
