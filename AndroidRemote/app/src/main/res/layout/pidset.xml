@@ -49,6 +49,36 @@
         android:progress="0"
         android:secondaryProgress="0" />
 
+    <TextView
+        android:id="@+id/textView_VS"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#FFF"
+        android:text=" VS:" />
+
+    <SeekBar
+        android:id="@+id/seekBar_VS"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="0"
+        android:progress="0"
+        android:secondaryProgress="0" />
+
+    <TextView
+        android:id="@+id/textView_KM"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#FFF"
+        android:text=" KM:" />
+
+    <SeekBar
+        android:id="@+id/seekBar_KM"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="0"
+        android:progress="0"
+        android:secondaryProgress="0" />
+
     <org.eazegraph.lib.charts.ValueLineChart xmlns:app="http://schemas.android.com/apk/res-auto"
         android:id="@+id/cubiclinechart"
         android:layout_width="match_parent"
@@ -58,7 +88,7 @@
         android:paddingBottom="40dp"
         app:egAnimationTime="0"
         app:egCurveSmoothness="0.4"
-        app:egLegendHeight="40dp"
+        app:egLegendHeight="20dp"
         android:padding="10dp"
         app:egUseCubic="true"/>
 
