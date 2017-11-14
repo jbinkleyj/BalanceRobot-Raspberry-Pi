@@ -743,7 +743,7 @@ public class MainActivity extends ActionBarActivity
 	}
 
 	public static float getKD() {
-		return Kd * 10;
+		return Kd * 100;
 	}
 
 	public static void setKD(float KD) {
