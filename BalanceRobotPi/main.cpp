@@ -36,9 +36,9 @@
 #define SERIAL_TIME 50 //ms
 #define SAMPLE_TIME 1 //ms
 
+#define KF_VAR_ACCEL 0.0075 // Variance of pressure acceleration noise input.
+#define KF_VAR_MEASUREMENT 0.05
 #define RESTRICT_PITCH
-
-#define	COUNT_KEY	0
 
 //physcal pins
 #define PWMR1  31
@@ -54,7 +54,53 @@
 #define SPD_INT_R 18   //interrupt L Phys:18
 #define SPD_PUL_R 22   //Phys:22
 
-bool m_IsMainThreadRunning,m_IsSerialThreadRunning;
+MPU6050 accelgyro;
+Kalman kalmanX;
+Kalman kalmanY;
+std::string RfCommAndroidMac = "5C....";// change it with your phone mac
+
+bool m_IsRunning = false;
+bool m_IsMainThreadRunning = false;
+bool m_IsSerialThreadRunning = false;
+
+char buf[500];
+ComPacket SerialPacket;
+
+int fd; //rfcomm0
+int Speed_L,Speed_R;
+int mSpeed,pwm_l,pwm_r;
+int Speed_Need = 0;
+int Turn_Need = 0;
+int Speed_Diff = 0;
+int Speed_Diff_ALL = 0;
+int Position_AVG = 0;
+int pwnLimit = 255;
+
+uint32_t timer;
+int16_t ax, ay, az;
+int16_t gx, gy, gz;
+
+double RAD_TO_DEG = 57.2958;
+double timediff = 0.0;
+double Correction = 0.0;
+double Setpoint = 0.0;
+double aggKp = 50.0;
+double aggKi = 75.0;
+double aggKd = 2.0;
+double angle_error = 0.0;
+double Angle_MPU = 0.0;
+double Gyro_MPU = 0.0;
+double Temperature = 0.0;
+
+double accX, accY, accZ;
+double gyroX, gyroY, gyroZ;
+double gyroXangle, gyroYangle; // Angle calculate using the gyro only
+double compAngleX, compAngleY; // Calculated angle using a complementary filter
+double kalAngleX, kalAngleY; // Calculated angle using a Kalman filter
+double Input, Output;
+
+//Specify the links and initial tuning parameters
+PID balancePID(&Input, &Output, &Setpoint, aggKp, aggKi, aggKd, DIRECT);
 
 template<typename T>
   T StringToNumber(const std::string& numberAsString)
@@ -69,73 +115,6 @@ template<typename T>
      }
      return valor;
   }
-
-MPU6050 accelgyro;
-
-std::string RfCommAndroidMac = "5C:2E:59:D6:67:4B";// 28:C6:71:03:49:9E change it with your phone mac
-
-/*
-pairing your phone
-
-bluetoothctl
-devices
-scan on
-pair mac adress
-trust mac adress
-connect mac adress
-
-display services on phone
-sdptool browse mac adress
-*/
-
-uint32_t timer;
-bool m_IsRunning = false;
-
-char buf[500];
-ComPacket SerialPacket;
-
-double gyroXangle, gyroYangle; // Angle calculate using the gyro only
-double compAngleX, compAngleY; // Calculated angle using a complementary filter
-double kalAngleX, kalAngleY; // Calculated angle using a Kalman filter
-double Angle_MPU = 0.0;
-double Gyro_MPU = 0.0;
-double Temperature = 0.0;
-double RAD_TO_DEG = 57.2958;
-
-int Speed_L,Speed_R;
-int mSpeed,pwm_l,pwm_r;
-unsigned int period = 10; //loop period in ms
-
-int Speed_Need = 0;
-int Turn_Need = 0;
-int Speed_Diff = 0;
-int Speed_Diff_ALL = 0;
-int Position_AVG = 0;
-double Correction = 0;
-bool StopFlag = true;
-
-int16_t ax, ay, az;
-int16_t gx, gy, gz;
-double accX, accY, accZ;
-double gyroX, gyroY, gyroZ;
-
-double timediff = 0.0;
-
-Kalman kalmanX;
-Kalman kalmanY;
-
-int pwnLimit = 255;
-double Setpoint = 0.0;
-double aggKp = 50.0;
-double aggKi = 75.0;
-double aggKd = 2.0;
-double angle_error = 0.0;
-
-double Input, Output;
-//Specify the links and initial tuning parameters
-PID balancePID(&Input, &Output, &Setpoint, aggKp, aggKi, aggKd, DIRECT);
-
-int fd; //rfcomm0
 
 unsigned int millis()
 {
@@ -645,6 +624,7 @@ void calculateGyro()
 
     Angle_MPU = kalAngleX;
 
+    //printf("Angle_MPU: %.2f  Time_Diff: %.1f\n",Angle_MPU,timediff);
     //Gyro_MPU = gyroXrate;
     //Temperature = (double)accelgyro.getTemperature() / 340.0 + 36.53;
 }
@@ -675,7 +655,7 @@ void PWM_Calculate()
     pwm_r = mSpeed - Speed_Diff;
     pwm_l = mSpeed + Speed_Diff;
 
-    printf("Angle_MPU: %.2f  pwm_r: %d pwm_l: %d  Speed_Diff: %d\n",Angle_MPU,pwm_r,pwm_l,Speed_Diff);
+    //printf("Angle_MPU: %.2f  pwm_r: %d pwm_l: %d  Speed_Diff: %d\n",Angle_MPU,pwm_r,pwm_l,Speed_Diff);
 
     Speed_L = 0;
     Speed_R = 0;
