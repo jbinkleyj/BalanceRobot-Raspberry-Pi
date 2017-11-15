@@ -698,7 +698,7 @@ void PWM_Calculate_Pos()
         pwm_l = pwm - Turn_Need;
      }
 
-     printf("Angle: %.2f  pwm_r: %d  pwm_l: %d  Position_Add: %d  Gyro_MPU: %.2f\n",Angle_MPU,pwm_r,pwm_l,Position_Add,Gyro_MPU);
+     printf("Angle: %.02f  pwm_r: %3d  pwm_l: %3d  Position_Add: %3d  Gyro_MPU: %.02f\n",Angle_MPU,pwm_r,pwm_l,Position_Add,Gyro_MPU);
 
      Speed_L = 0;
      Speed_R = 0;
