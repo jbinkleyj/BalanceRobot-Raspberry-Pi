@@ -60,7 +60,8 @@ class PID
     double GetKi();						  //  they were created mainly for the pid front-end,
     double GetKd();						  // where it's important to know what is actually
     int GetMode();						  //  inside the PID.
-    int GetDirection();					  //
+    int GetDirection();
+    void Reset();
 
   private:
     void Initialize();
