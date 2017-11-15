@@ -63,18 +63,20 @@ std::string RfCommAndroidMac = "5C:2E:59:D6:67:4B";// change it with your phone 
 bool m_IsRunning = false;
 bool m_IsMainThreadRunning = false;
 bool m_IsSerialThreadRunning = false;
+bool StopFlag = true;
 
 char buf[500];
 ComPacket SerialPacket;
 
 int fd; //rfcomm0
 int Speed_L,Speed_R;
-int mSpeed,pwm_l,pwm_r;
+int pwm,pwm_l,pwm_r;
 int Speed_Need = 0;
 int Turn_Need = 0;
 int Speed_Diff = 0;
 int Speed_Diff_ALL = 0;
 int Position_AVG = 0;
+int Position_Add = 0;
 
 uint32_t timer;
 int16_t ax, ay, az;
@@ -153,7 +155,6 @@ void ResetValues()
     Setpoint = 0.0;
     Speed_Diff = 0;
     Speed_Diff_ALL = 0;
-    Position_AVG = 0;
     Input = 0.0;
     Angle_MPU = 0.0;
     Gyro_MPU = 0.0;
@@ -163,7 +164,9 @@ void ResetValues()
     Correction = 0.0;
     Speed_L = 0;
     Speed_R = 0;
-    mSpeed = 0;
+    Position_Add = 0;
+    Position_AVG = 0;
+    pwm = 0;
     pwm_l = 0;
     pwm_r = 0;
 }
@@ -268,7 +271,6 @@ void updateConfigurationFileFromStatus() {
     pt.put("Robot.RfCommAndroidMac", RfCommAndroidMac);
 
     boost::property_tree::ini_parser::write_ini("settings.ini", pt);
-    printf("settings.ini file updated.\n");
 }
 
 void createConfigurationFile() {
@@ -286,7 +288,6 @@ void createConfigurationFile() {
     pt.put("Robot.RfCommAndroidMac", RfCommAndroidMac);
 
     boost::property_tree::ini_parser::write_ini("settings.ini", pt);
-    printf("settings.ini file created.\n\n");
 }
 
 void initConf()
@@ -316,140 +317,6 @@ void updateConf()
 }
 
 /////////////////
-
-bool sendData(char *data, unsigned int buf_size)
-{
-    if (fd != -1) {
-        return write(fd, data, buf_size);
-    }
-    else return -1;
-}
-
-void RobotDirection()
-{
-  unsigned char Speed = SerialPacket.m_Buffer[1];
-  if(SerialPacket.m_Buffer[3] == 0x07)
-  {
-      m_IsRunning = true, printf("started...\n");ResetValues();
-      return;
-  }
-  else if(SerialPacket.m_Buffer[3] == 0x08)
-  {
-      m_IsRunning = false; printf("stopped...\n");ResetValues();
-      return;
-  }
-
-  switch(SerialPacket.m_Buffer[3])
-  {
-    case 0x00: Speed_Need = 0;Turn_Need = 0;break;
-    case 0x01: Speed_Need = -Speed; break;
-    case 0x02: Speed_Need = Speed; break;
-    case 0x03: Turn_Need = Speed; break;
-    case 0x04: Turn_Need = -Speed; break;
-    case 0x05: Correction = Correction + 0.1; break;
-    case 0x06: Correction = Correction - 0.1; break;
-    default:break;
-  }
-
-  updateConf();
-  sprintf(buf,"Robot Direction(0x%02X): Sn: %d Tn: %d Cr: %0.2f",SerialPacket.m_Buffer[3],Speed_Need,Turn_Need,Correction);
-  printf("%s\n",buf);
-}
-
-void UpdatePID()
-{  
-  unsigned int Upper,Lower;
-  double NewPara;
-  Upper = SerialPacket.m_Buffer[2];
-  Lower = SerialPacket.m_Buffer[1];
-  NewPara = (float)(Upper<<8 | Lower)/100.0;
-
-  switch(SerialPacket.m_Buffer[3])
-  {
-    case 0x01:aggKp = aggKm * NewPara;break;
-    case 0x02:aggKi = aggKm * NewPara;break;
-    case 0x03:aggKd = aggKm * NewPara;break;
-    case 0x04:aggVs = NewPara;break;
-    case 0x05:aggKm = NewPara;break;
-    default:break;
-  }
-
-  updateConf();
-  sprintf(buf,"Update PID(0x%02X) Kp: %0.2f Ki: %0.2f Kd: %0.2f  Vs: %0.2f Km: %0.2f",SerialPacket.m_Buffer[3],aggKp,aggKi,aggKd,aggVs,aggKm);
-  printf("%s\n",buf);
-}
-
-
-void UserComunication()
-{
-  if(SerialPacket.m_PackageOK == true)
-  {
-    SerialPacket.m_PackageOK = false;
-
-    switch(SerialPacket.m_Buffer[4])
-    {
-      case 0x01:  break;
-      case 0x02:  UpdatePID();break;
-      case 0x03:  RobotDirection();break;
-      case 0x04:  break;
-      case 0x05:  break;
-      case 0x06:  break;
-      case 0x07:  break;
-      default:    break;
-    }
-  }
-}
-
-void MySerialEvent(uchar c)
-{
-      uchar tmp = 0;
-
-      for(int i = 5; i > 0; i--)
-      {
-         SerialPacket.m_Buffer[i] = SerialPacket.m_Buffer[i-1];
-      }
-
-      SerialPacket.m_Buffer[0] = c;
-
-      if(SerialPacket.m_Buffer[5] == 0xAA)
-      {
-         tmp = SerialPacket.m_Buffer[1]^SerialPacket.m_Buffer[2]^SerialPacket.m_Buffer[3];
-         if(tmp == SerialPacket.m_Buffer[0])
-         {
-           SerialPacket.m_PackageOK = true;
-
-           UserComunication();
-         }
-      }
-}
-
-int getData(uchar* data) {
-
-    int n = 0,
-    spot = 0;
-    char buf = '\0';
-    char response[1024];
-    memset(response, '\0', sizeof response);
-
-    // If the port is actually open, read the data
-    if (fd != -1) {
-
-        do {
-            n = read( fd, &buf, 1 );
-            MySerialEvent((uchar)buf);
-            sprintf( &response[spot], "%c", buf );
-            spot += n;
-        } while( buf != '\r' && n > 0);
-
-        memcpy(data,response,sizeof response);
-
-        // Grab the data and return the nubmer of bytes actually read
-        return spot;
-        //return read(fd, data, sizeof(data));
-    }
-    // Port is closed!
-    else return -1;
-}
 
 std::string exec(const char* cmd) {
     char buffer[128];
@@ -565,6 +432,142 @@ bool bindRFComm(const char* dest)
     return true;
 }
 
+void RobotDirection()
+{
+  unsigned char Speed = SerialPacket.m_Buffer[1];
+  if(SerialPacket.m_Buffer[3] == 0x07)
+  {
+      m_IsRunning = true, printf("started...\n");ResetValues();
+      return;
+  }
+  else if(SerialPacket.m_Buffer[3] == 0x08)
+  {
+      m_IsRunning = false; printf("stopped...\n");ResetValues();
+      ResetValues();
+      return;
+  }
+
+  switch(SerialPacket.m_Buffer[3])
+  {
+    case 0x00:
+      Speed_Need = 0;Turn_Need = 0;Position_Add = 0;
+      break;
+    case 0x01: Speed_Need = Speed; break;
+    case 0x02: Speed_Need = -Speed; break;
+    case 0x03: Turn_Need = Speed; break;
+    case 0x04: Turn_Need = -Speed; break;
+    case 0x05: Correction = Correction + 0.1; break;
+    case 0x06: Correction = Correction - 0.1; break;
+    default:break;
+  }
+
+  updateConf();
+  sprintf(buf,"Robot Direction(0x%02X): Sn: %d Tn: %d Cr: %0.2f",SerialPacket.m_Buffer[3],Speed_Need,Turn_Need,Correction);
+  printf("%s\n",buf);
+}
+
+void UpdatePID()
+{
+  unsigned int Upper,Lower;
+  double NewPara;
+  Upper = SerialPacket.m_Buffer[2];
+  Lower = SerialPacket.m_Buffer[1];
+  NewPara = (float)(Upper<<8 | Lower)/100.0;
+
+  switch(SerialPacket.m_Buffer[3])
+  {
+    case 0x01:aggKp = aggKm * NewPara;break;
+    case 0x02:aggKi = aggKm * NewPara;break;
+    case 0x03:aggKd = aggKm * NewPara;break;
+    case 0x04:aggVs = NewPara;break;
+    case 0x05:aggKm = NewPara;break;
+    default:break;
+  }
+
+  updateConf();
+  sprintf(buf,"\nUpdate PID(0x%02X) Kp: %0.2f Ki: %0.2f Kd: %0.2f  Vs: %0.2f  Km: %0.2f",SerialPacket.m_Buffer[3],aggKp,aggKi,aggKd,aggVs,aggKm);
+  printf("%s\n",buf);
+}
+
+void UserComunication()
+{
+  if(SerialPacket.m_PackageOK == true)
+  {
+    SerialPacket.m_PackageOK = false;
+
+    switch(SerialPacket.m_Buffer[4])
+    {
+      case 0x01:  break;
+      case 0x02:  UpdatePID();break;
+      case 0x03:  RobotDirection();break;
+      case 0x04:  break;
+      case 0x05:  break;
+      case 0x06:  break;
+      case 0x07:  break;
+      default:    break;
+    }
+  }
+}
+
+void MySerialEvent(uchar c)
+{
+      uchar tmp = 0;
+
+      for(int i = 5; i > 0; i--)
+      {
+         SerialPacket.m_Buffer[i] = SerialPacket.m_Buffer[i-1];
+      }
+
+      SerialPacket.m_Buffer[0] = c;
+
+      if(SerialPacket.m_Buffer[5] == 0xAA)
+      {
+         tmp = SerialPacket.m_Buffer[1]^SerialPacket.m_Buffer[2]^SerialPacket.m_Buffer[3];
+         if(tmp == SerialPacket.m_Buffer[0])
+         {
+           SerialPacket.m_PackageOK = true;
+
+           UserComunication();
+         }
+      }
+}
+
+
+int getData(uchar* data) {
+
+    int n = 0,
+    spot = 0;
+    char buf = '\0';
+    char response[1024];
+    memset(response, '\0', sizeof response);
+
+    // If the port is actually open, read the data
+    if (fd != -1) {
+
+        do {
+            n = read( fd, &buf, 1 );
+            MySerialEvent((uchar)buf);
+            sprintf( &response[spot], "%c", buf );
+            spot += n;
+        } while( buf != '\r' && n > 0);
+
+        memcpy(data,response,sizeof response);
+
+        // Grab the data and return the nubmer of bytes actually read
+        return spot;
+        //return read(fd, data, sizeof(data));
+    }
+    // Port is closed!
+    else return -1;
+}
+
+bool sendData(char *data, unsigned int buf_size)
+{
+    if (fd != -1) {
+        return write(fd, data, buf_size);
+    }
+    else return -1;
+}
 
 void calculateGyro()
 {
@@ -642,32 +645,6 @@ void calculateGyro()
 
 }
 
-/*float K = 1.064 ;       //1.9 * 1.12;  // wheels 80mm
-//float K = 1.9 ;      // wheels 100mm
-float Kp = 15;
-float Ki = 6.9;
-float Kd = 20;
-float Kp_Wheel = -0.025;
-float Kd_Wheel = -9;
-
-int last_error = 0;
-int integrated_error = 0;
-float pTerm=0, iTerm=0, dTerm=0, pTerm_Wheel=0, dTerm_Wheel=0;
-
-int updatePid(float targetPosition, float currentPosition)   {
-    float error = targetPosition - currentPosition;
-    pTerm = Kp * error;
-    integrated_error += error;
-    iTerm = Ki * constrain(integrated_error, -GUARD_GAIN, GUARD_GAIN);
-    dTerm = Kd * (error - last_error);
-    last_error = error;
-    pTerm_Wheel = Kp_Wheel * count;           //  -(Kxp/100) * count;
-    dTerm_Wheel = Kd_Wheel * (count - last_count);
-    last_count = count;
-    return -constrain(K*(pTerm + iTerm + dTerm + pTerm_Wheel + dTerm_Wheel), -255, 255);
-}*/
-
-
 void encodeL (void)
 {
     if (digitalRead(SPD_PUL_L))
@@ -684,14 +661,67 @@ void encodeR (void)
         Speed_R -= 1;
 }
 
+void PWM_Calculate_Pos()
+{
+    float ftmp = 0;
+    ftmp = (Speed_L + Speed_R) * 0.5;
+    if( ftmp > 0)
+    Position_AVG = ftmp +0.5;
+    else
+    Position_AVG = ftmp -0.5;
+
+    Speed_Diff = Speed_L - Speed_R;
+    Speed_Diff_ALL += Speed_Diff;
+    Position_Add += Position_AVG;  //position
+    Position_Add += Speed_Need;  //
+    Position_Add = constrain(Position_Add, -1*pwnLimit, pwnLimit);
+
+    pwm =  (Angle_MPU) * aggKp           //P
+           + Position_Add * aggKi        //I
+           + Gyro_MPU * aggKd;           //D
+
+    if((Speed_Need != 0) && (Turn_Need == 0))
+     {
+       if(StopFlag == true)
+       {
+         Speed_Diff_ALL = 0;
+         StopFlag = false;
+       }
+       pwm_r = int(pwm - Speed_Diff_ALL);
+       pwm_l = int(pwm + Speed_Diff_ALL);
+     }
+     else
+     {
+       StopFlag = true;
+        pwm_r = pwm + Turn_Need; //
+        pwm_l = pwm - Turn_Need;
+     }
+
+     printf("Angle: %.2f  pwm_r: %d  pwm_l: %d  Position_Add: %d  Gyro_MPU: %.2f\n",Angle_MPU,pwm_r,pwm_l,Position_Add,Gyro_MPU);
+
+     Speed_L = 0;
+     Speed_R = 0;
+}
+
 void PWM_Calculate()
 {
     //forward: l= - ; r= +
     Speed_Diff = Speed_R + Speed_L;
+    Speed_Diff_ALL += Speed_Diff;
+
+    float ftmp = 0;
+    ftmp = (Speed_L + Speed_R) * 0.5;
+    if( ftmp > 0)
+    Position_AVG = ftmp +0.5;
+    else
+    Position_AVG = ftmp -0.5;
+
+    Position_Add += Position_AVG;  //position
+    Position_Add += Speed_Need;
+    Position_Add = constrain(Position_Add, -1*pwnLimit, pwnLimit);
+
+    Setpoint = Correction;   
     Input = Angle_MPU;
-
-    Setpoint = Correction;
-
     angle_error = abs(Setpoint - Input); //distance away from setpoint
 
     if (angle_error < 10)
@@ -700,17 +730,31 @@ void PWM_Calculate()
     }
     else
     {   //we're far from setpoint, use aggressive tuning parameters
-        balancePID.SetTunings(aggKp, aggKi, aggKd);
+        balancePID.SetTunings(aggKp,  aggKi,  aggKd);
     }
 
-    balancePID.Compute();   
+    balancePID.Compute(Position_Add,Gyro_MPU);
 
-    mSpeed = -1*(int)Output;
+    pwm = -1*(int)Output;
 
-    pwm_l = mSpeed + aggVs * Speed_Diff;
-    pwm_r = mSpeed - aggVs * Speed_Diff;
+    if((Speed_Need != 0) && (Turn_Need == 0))
+    {
+        if(StopFlag == true)
+        {
+            Speed_Diff_ALL = 0;
+            StopFlag = false;
+        }
+        pwm_r = int(pwm - Speed_Diff_ALL);
+        pwm_l = int(pwm + Speed_Diff_ALL);
+    }
+    else
+    {
+        StopFlag = true;
+        pwm_r =int(pwm - aggVs * Speed_Diff + Turn_Need);
+        pwm_l =int(pwm + aggVs * Speed_Diff - Turn_Need);
+    }
 
-   // printf("Angle_MPU: %.2f   pwm_r: %d   pwm_l: %d\n",Angle_MPU,pwm_r,pwm_l);
+    printf("Angle: %.02f  pwm_r: %3d  pwm_l: %3d  Position_Add: %3d  Gyro_MPU: %.02f\n",Angle_MPU,pwm_r,pwm_l,Position_Add,Gyro_MPU);
 
     Speed_L = 0;
     Speed_R = 0;
@@ -718,13 +762,6 @@ void PWM_Calculate()
 
 void Robot_Control()
 {
-   /* M1 	M2 	M3 	M4 	Descriptions
-    1 	0 	1 	0 	When the motors rotate forwards, the robot goes straight
-    0 	1 	0 	1 	When the motors rotate backwards, the robot draws back
-    0 	0 	1 	0 	When the right motor stops and left motor rotates forwards, the robot turns right
-    1 	0 	0 	0 	When the left motor stops and right motor rotates forwards, the robot turns left
-    0 	0 	0 	0 	When the motors stop, the robot stops*/
-
     if (pwm_r>0)
     {
         digitalWrite(PWMR1, HIGH);
@@ -749,7 +786,7 @@ void Robot_Control()
         digitalWrite(PWML1, HIGH);
         digitalWrite(PWML2, LOW);
         pwm_l = -pwm_l;
-    }
+    }       
 
     if( Angle_MPU > 45 || Angle_MPU < -45 || !m_IsRunning)
     {
@@ -759,7 +796,6 @@ void Robot_Control()
 
     softPwmWrite(PWML, pwm_l);
     softPwmWrite(PWMR, pwm_r);
-
 }
 
 PI_THREAD (serialThread)
@@ -779,7 +815,7 @@ PI_THREAD (serialThread)
 }
 
 PI_THREAD (mainThread)
-{   
+{
     while (1)
     {
         if(!m_IsMainThreadRunning)
@@ -791,6 +827,7 @@ PI_THREAD (mainThread)
 
         calculateGyro();
         PWM_Calculate();
+        //PWM_Calculate_Pos();
         Robot_Control();
 
         ::usleep(SLEEP_PERIOD * SAMPLE_TIME);
@@ -909,7 +946,6 @@ void init()
 
     timer = micros();
 }
-
 
 void  ExitHandler(int sig)
 {
