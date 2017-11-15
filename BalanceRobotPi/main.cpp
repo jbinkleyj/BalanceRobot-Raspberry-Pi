@@ -444,6 +444,7 @@ void RobotDirection()
   {
       m_IsRunning = false; printf("stopped...\n");ResetValues();
       ResetValues();
+      balancePID.Reset();
       return;
   }
 
