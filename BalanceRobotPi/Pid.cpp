@@ -21,6 +21,7 @@ PID::PID(double* Input, double* Output, double* Setpoint,
 
     PID::SetControllerDirection(ControllerDirection);
     PID::SetTunings(Kp, Ki, Kd, POn);
+    posON = false;
 
     lastTime = millis()-SampleTime;
 }
@@ -52,18 +53,33 @@ unsigned int PID::millis()
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
-bool PID::Compute()
+bool PID::Compute(int pos, double gyro)
 {
-   if(!inAuto) return false;
-   unsigned long now = millis();
-   unsigned long timeChange = (now - lastTime);
-   if(timeChange>=SampleTime)
-   {
+    if(pos == 0 && posON)
+    {
+        outputSum = 0.0;
+        posON = false;
+    }
+    else if(pos != 0 && !posON)
+    {
+        outputSum = 0.0;
+        posON = true;
+    }
+
+    if(!inAuto) return false;
+    unsigned long now = millis();
+    unsigned long timeChange = (now - lastTime);
+    if(timeChange>=SampleTime)
+    {
       /*Compute all the working error variables*/
       double input = *myInput;
       double error = *mySetpoint - input;
       double dInput = (input - lastInput);
-      outputSum+= (ki * error);
+
+      if(posON)
+           outputSum+= (ki * error * pos);
+      else
+           outputSum+= (ki * error);
 
       /*Add Proportional on Measurement, if P_ON_M is specified*/
       if(!pOnE) outputSum-= kp * dInput;
@@ -72,12 +88,12 @@ bool PID::Compute()
       else if(outputSum < outMin) outputSum= outMin;
 
       /*Add Proportional on Error, if P_ON_E is specified*/
-       double output;
+      double output;
       if(pOnE) output = kp * error;
       else output = 0;
 
       /*Compute Rest of PID Output*/
-      output += outputSum - kd * dInput;
+      output += outputSum - kd * dInput * gyro;
 
         if(output > outMax) output = outMax;
       else if(output < outMin) output = outMin;
@@ -87,8 +103,8 @@ bool PID::Compute()
       lastInput = input;
       lastTime = now;
         return true;
-   }
-   else return false;
+    }
+    else return false;
 }
 
 /* SetTunings(...)*************************************************************
@@ -201,7 +217,7 @@ void PID::SetControllerDirection(int Direction)
 {
    if(inAuto && Direction !=controllerDirection)
    {
-        kp = (0 - kp);
+      kp = (0 - kp);
       ki = (0 - ki);
       kd = (0 - kd);
    }
