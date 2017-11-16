@@ -21,8 +21,6 @@ PID::PID(double* Input, double* Output, double* Setpoint,
 
     PID::SetControllerDirection(ControllerDirection);
     PID::SetTunings(Kp, Ki, Kd, POn);
-    posON = false;
-
     lastTime = millis()-SampleTime;
 }
 
@@ -53,19 +51,8 @@ unsigned int PID::millis()
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
-bool PID::Compute(int pos, double gyro)
-{
-    if(pos == 0 && posON)
-    {
-        outputSum = 0.0;
-        posON = false;
-    }
-    else if(pos != 0 && !posON)
-    {
-        outputSum = 0.0;
-        posON = true;
-    }
-
+bool PID::Compute()
+{  
     if(!inAuto) return false;
     unsigned long now = millis();
     unsigned long timeChange = (now - lastTime);
@@ -76,10 +63,7 @@ bool PID::Compute(int pos, double gyro)
       double error = *mySetpoint - input;
       double dInput = (input - lastInput);
 
-      if(posON)
-           outputSum+= (ki * error * pos);
-      else
-           outputSum+= (ki * error);
+      outputSum+= (ki * error);
 
       /*Add Proportional on Measurement, if P_ON_M is specified*/
       if(!pOnE) outputSum-= kp * dInput;
@@ -93,7 +77,7 @@ bool PID::Compute(int pos, double gyro)
       else output = 0;
 
       /*Compute Rest of PID Output*/
-      output += outputSum - kd * dInput * gyro;
+      output += outputSum - kd * dInput;
 
         if(output > outMax) output = outMax;
       else if(output < outMin) output = outMin;
@@ -101,8 +85,9 @@ bool PID::Compute(int pos, double gyro)
 
       /*Remember some variables for next time*/
       lastInput = input;
-      lastTime = now;
-        return true;
+      lastTime = now;    
+
+      return true;
     }
     else return false;
 }
@@ -121,10 +106,12 @@ void PID::SetTunings(double Kp, double Ki, double Kd, int POn)
 
    dispKp = Kp; dispKi = Ki; dispKd = Kd;
 
-   double SampleTimeInSec = ((double)SampleTime)/1000;
-   kp = Kp;
-   ki = Ki * SampleTimeInSec;
-   kd = Kd / SampleTimeInSec;
+   //double SampleTimeInSec = ((double)SampleTime)/1000;
+   //ki = Ki * SampleTimeInSec;
+   // kd = Kd / SampleTimeInSec;
+   kp = Kp * 2;
+   ki = Ki / 25;
+   kd = Kd * 500;
 
   if(controllerDirection ==REVERSE)
    {
@@ -212,8 +199,7 @@ void PID::Initialize()
 void PID::Reset()
 {
    outputSum = 0.0;
-   lastInput = 0.0;
-   posON = false;
+   lastInput = 0.0;  
    lastTime = millis()-SampleTime;
 }
 
