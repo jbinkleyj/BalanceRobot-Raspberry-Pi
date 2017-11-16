@@ -28,7 +28,7 @@ class PID
 
     void SetMode(int Mode);               // * sets PID to either Manual (0) or Auto (non-0)
 
-    bool Compute(int pos, double gyro);                       // * performs the PID calculation.  it should be
+    bool Compute();                       // * performs the PID calculation.  it should be
                                           //   called every time loop() cycles. ON/OFF and
                                           //   calculation frequency can be set using SetMode
                                           //   SetSampleTime respectively
@@ -87,7 +87,7 @@ class PID
 
     unsigned long SampleTime;
     double outMin, outMax;
-    bool inAuto, pOnE, posON;
+    bool inAuto, pOnE;
 };
 
 #endif // PID_H
