@@ -86,9 +86,9 @@ double RAD_TO_DEG = 57.2958;
 double timediff = 0.0;
 double Correction = 0.0;
 double Setpoint = 0.0;
-double aggKp = 75.0;
-double aggKi = 300.0;
-double aggKd = 0.38;
+double aggKp = 50.0;
+double aggKi = 75.0;
+double aggKd = 0.45;
 double aggVs = 15.0; //Velocity wheel
 double aggKm = 1.0; //Velocity wheel
 double angle_error = 0.0;
@@ -453,8 +453,8 @@ void RobotDirection()
     case 0x00:
       Speed_Need = 0;Turn_Need = 0;Position_Add = 0;
       break;
-    case 0x01: Speed_Need = Speed; break;
-    case 0x02: Speed_Need = -Speed; break;
+    case 0x01: Speed_Need = -Speed; break;
+    case 0x02: Speed_Need = Speed; break;
     case 0x03: Turn_Need = Speed; break;
     case 0x04: Turn_Need = -Speed; break;
     case 0x05: Correction = Correction + 0.1; break;
@@ -673,54 +673,27 @@ void PWM_Calculate_Pos()
 
     Speed_Diff = Speed_L - Speed_R;
     Speed_Diff_ALL += Speed_Diff;
-    Position_Add += Position_AVG;  //position
-    Position_Add += Speed_Need;  //
-    Position_Add = constrain(Position_Add, -1*pwnLimit, pwnLimit);
 
-    pwm =  (Angle_MPU) * aggKp           //P
-           + Position_Add * aggKi        //I
+    Position_Add += Position_AVG;  //position
+    Position_Add += Speed_Need / 100;  //
+    Position_Add = constrain(Position_Add, -pwnLimit, pwnLimit);
+
+    pwm =  (Angle_MPU + Correction) * aggKp           //P
+           + Position_Add * aggKi        //I           
            + Gyro_MPU * aggKd;           //D
 
-    if((Speed_Need != 0) && (Turn_Need == 0))
-     {
-       if(StopFlag == true)
-       {
-         Speed_Diff_ALL = 0;
-         StopFlag = false;
-       }
-       pwm_r = int(pwm - Speed_Diff_ALL);
-       pwm_l = int(pwm + Speed_Diff_ALL);
-     }
-     else
-     {
-       StopFlag = true;
-        pwm_r = pwm + Turn_Need; //
-        pwm_l = pwm - Turn_Need;
-     }
+    pwm_r =int(pwm + Turn_Need );
+    pwm_l =int(pwm - Turn_Need );
 
-     printf("Angle: %.02f  pwm_r: %3d  pwm_l: %3d  Position_Add: %3d  Gyro_MPU: %.02f\n",Angle_MPU,pwm_r,pwm_l,Position_Add,Gyro_MPU);
+    printf("Angle: %.02f  pwm_r: %5d  pwm_l: %5d\n",Angle_MPU,pwm_r,pwm_l);
 
-     Speed_L = 0;
-     Speed_R = 0;
+    Speed_L = 0;
+    Speed_R = 0;
 }
 
 void PWM_Calculate()
 {
-    //forward: l= - ; r= +
-    Speed_Diff = Speed_R + Speed_L;
-    Speed_Diff_ALL += Speed_Diff;
-
-    float ftmp = 0;
-    ftmp = (Speed_L + Speed_R) * 0.5;
-    if( ftmp > 0)
-    Position_AVG = ftmp +0.5;
-    else
-    Position_AVG = ftmp -0.5;
-
-    Position_Add += Position_AVG;  //position
-    Position_Add += Speed_Need;
-    Position_Add = constrain(Position_Add, -1*pwnLimit, pwnLimit);
-
+    Speed_Diff = Speed_R + Speed_L;   
     Setpoint = Correction;   
     Input = Angle_MPU;
     angle_error = abs(Setpoint - Input); //distance away from setpoint
@@ -731,31 +704,17 @@ void PWM_Calculate()
     }
     else
     {   //we're far from setpoint, use aggressive tuning parameters
-        balancePID.SetTunings(aggKp,  aggKi,  aggKd);
+        balancePID.SetTunings(aggKp,   aggKi,  aggKd);
     }
 
-    balancePID.Compute(Position_Add,Gyro_MPU);
+    balancePID.Compute();
 
-    pwm = -1*(int)Output;
+    pwm = -(int)(Output - Gyro_MPU * aggKd);
 
-    if((Speed_Need != 0) && (Turn_Need == 0))
-    {
-        if(StopFlag == true)
-        {
-            Speed_Diff_ALL = 0;
-            StopFlag = false;
-        }
-        pwm_r = int(pwm - Speed_Diff_ALL);
-        pwm_l = int(pwm + Speed_Diff_ALL);
-    }
-    else
-    {
-        StopFlag = true;
-        pwm_r =int(pwm - aggVs * Speed_Diff + Turn_Need);
-        pwm_l =int(pwm + aggVs * Speed_Diff - Turn_Need);
-    }
+    pwm_r =int(pwm - aggVs * Speed_Diff + Turn_Need );
+    pwm_l =int(pwm + aggVs * Speed_Diff - Turn_Need );
 
-    printf("Angle: %.02f  pwm_r: %3d  pwm_l: %3d  Position_Add: %3d  Gyro_MPU: %.02f\n",Angle_MPU,pwm_r,pwm_l,Position_Add,Gyro_MPU);
+    printf("Angle: %.02f  pwm_r: %3d  pwm_l: %3d\n",Angle_MPU,pwm_r,pwm_l);
 
     Speed_L = 0;
     Speed_R = 0;
