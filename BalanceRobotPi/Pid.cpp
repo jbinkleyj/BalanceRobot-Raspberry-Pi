@@ -109,9 +109,9 @@ void PID::SetTunings(double Kp, double Ki, double Kd, int POn)
    //double SampleTimeInSec = ((double)SampleTime)/1000;
    //ki = Ki * SampleTimeInSec;
    // kd = Kd / SampleTimeInSec;
-   kp = Kp * 2;
-   ki = Ki / 25;
-   kd = Kd * 500;
+   kp = Kp;
+   ki = Ki / 10;
+   kd = Kd * 100;
 
   if(controllerDirection ==REVERSE)
    {
