@@ -35,7 +35,7 @@
 #define SLEEP_PERIOD 1000 //us;
 #define SERIAL_TIME 100 //ms
 #define SAMPLE_TIME 1 //ms
-int pwnLimit = 255;
+int pwnLimit = 100;
 
 #define KF_VAR_ACCEL 0.0075 // Variance of pressure acceleration noise input.
 #define KF_VAR_MEASUREMENT 0.05
@@ -86,10 +86,10 @@ double RAD_TO_DEG = 57.2958;
 double timediff = 0.0;
 double Correction = 0.0;
 double Setpoint = 0.0;
-double aggKp = 50.0;
-double aggKi = 75.0;
-double aggKd = 0.45;
-double aggVs = 15.0; //Velocity wheel
+double aggKp = 35.0;
+double aggKi = 20.0;
+double aggKd = 0.2;
+double aggVs = 20.0; //Velocity wheel
 double aggKm = 1.0; //Velocity wheel
 double angle_error = 0.0;
 double Angle_MPU = 0.0;
@@ -572,6 +572,8 @@ bool sendData(char *data, unsigned int buf_size)
 
 void calculateGyro()
 {
+    //currentAngle = 0.9934 * (previousAngle + gyroAngle) + 0.0066 * (accAngle)
+
     timediff = (micros() - timer)/1000;
     double dt = (double)(micros() - timer) / 1000000; // Calculate delta time
 
@@ -652,6 +654,8 @@ void encodeL (void)
         Speed_L += 1;
     else
         Speed_L -= 1;
+
+    //printf("Speed_L: %d\n",Speed_L);
 }
 
 void encodeR (void)
@@ -660,6 +664,8 @@ void encodeR (void)
         Speed_R += 1;
     else
         Speed_R -= 1;
+
+    //printf("Speed_R: %d\n",Speed_R);
 }
 
 void PWM_Calculate_Pos()
@@ -685,7 +691,7 @@ void PWM_Calculate_Pos()
     pwm_r =int(pwm + Turn_Need );
     pwm_l =int(pwm - Turn_Need );
 
-    printf("Angle: %.02f  pwm_r: %5d  pwm_l: %5d\n",Angle_MPU,pwm_r,pwm_l);
+   //printf("Angle: %.02f  pwm_r: %5d  pwm_l: %5d\n",Angle_MPU,pwm_r,pwm_l);
 
     Speed_L = 0;
     Speed_R = 0;
@@ -709,10 +715,11 @@ void PWM_Calculate()
 
     balancePID.Compute();
 
-    pwm = -(int)(Output - Gyro_MPU * aggKd);
+    pwm = -(int)(Output - (Gyro_MPU * aggKd / 2));
+    //pwm = -(int)(Output);
 
-    pwm_r =int(pwm - aggVs * Speed_Diff + Turn_Need );
-    pwm_l =int(pwm + aggVs * Speed_Diff - Turn_Need );
+    pwm_r =int(pwm - aggVs * Speed_Diff + Turn_Need);
+    pwm_l =int(pwm + aggVs * Speed_Diff - Turn_Need);
 
     printf("Angle: %.02f  pwm_r: %3d  pwm_l: %3d\n",Angle_MPU,pwm_r,pwm_l);
 
