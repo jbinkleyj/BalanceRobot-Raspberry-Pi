@@ -84,12 +84,12 @@ int16_t gx, gy, gz;
 
 double RAD_TO_DEG = 57.2958;
 double timediff = 0.0;
-double Correction = 0.0;
+double Correction = 2.0;
 double Setpoint = 0.0;
-double aggKp = 35.0;
-double aggKi = 20.0;
-double aggKd = 0.2;
-double aggVs = 20.0; //Velocity wheel
+double aggKp = 50.0;
+double aggKi = 5.0;
+double aggKd = 0.25;
+double aggVs = 15.0; //Velocity wheel
 double aggKm = 1.0; //Velocity wheel
 double angle_error = 0.0;
 double Angle_MPU = 0.0;
@@ -160,8 +160,7 @@ void ResetValues()
     Gyro_MPU = 0.0;
     Temperature = 0.0;
     Speed_Need = 0;
-    Turn_Need = 0;
-    Correction = 0.0;
+    Turn_Need = 0;  
     Speed_L = 0;
     Speed_R = 0;
     Position_Add = 0;
@@ -681,10 +680,10 @@ void PWM_Calculate_Pos()
     Speed_Diff_ALL += Speed_Diff;
 
     Position_Add += Position_AVG;  //position
-    Position_Add += Speed_Need / 100;  //
+    //Position_Add += Speed_Need;  //
     Position_Add = constrain(Position_Add, -pwnLimit, pwnLimit);
 
-    pwm =  (Angle_MPU + Correction) * aggKp           //P
+    pwm =  (Angle_MPU + Correction  -  (Speed_Need / 10)) * aggKp           //P
            + Position_Add * aggKi        //I           
            + Gyro_MPU * aggKd;           //D
 
@@ -700,9 +699,19 @@ void PWM_Calculate_Pos()
 void PWM_Calculate()
 {
     Speed_Diff = Speed_R + Speed_L;   
-    Setpoint = Correction;   
+    Setpoint = Correction -  (Speed_Need / 10);
     Input = Angle_MPU;
     angle_error = abs(Setpoint - Input); //distance away from setpoint
+
+    float ftmp = 0;
+    ftmp = (Speed_L + Speed_R) * 0.5;
+    if( ftmp > 0)
+    Position_AVG = ftmp +0.5;
+    else
+    Position_AVG = ftmp -0.5;
+
+    Position_Add += Position_AVG;  //position
+    Position_Add = constrain(Position_Add, -pwnLimit, pwnLimit);
 
     if (angle_error < 10)
     {   //we're close to setpoint, use conservative tuning parameters
@@ -715,7 +724,7 @@ void PWM_Calculate()
 
     balancePID.Compute();
 
-    pwm = -(int)(Output - (Gyro_MPU * aggKd / 2));
+    pwm = -(int)(Output - (Gyro_MPU * aggKd / 5) - (Position_Add / 5));
     //pwm = -(int)(Output);
 
     pwm_r =int(pwm - aggVs * Speed_Diff + Turn_Need);
