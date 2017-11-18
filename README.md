@@ -3,7 +3,7 @@ BalanceRobotPi Raspberry Pi written in c++,
 build:
 make clean, qmake, make
 
-Remote module written in android studio java
+Remote module written in android studio java , uses Rfcomm serial connection via bluetooth
 
 Balance Robot Arduino Due or Mega
 
