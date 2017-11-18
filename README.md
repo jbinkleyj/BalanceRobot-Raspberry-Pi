@@ -4,9 +4,6 @@ build:
 make clean, qmake, make
 
 Remote module written in android studio java , uses Rfcomm serial connection via bluetooth
-
-Balance Robot Arduino Due or Mega
-
 The Balance Robot uses:
 
 18650 battery holder,
