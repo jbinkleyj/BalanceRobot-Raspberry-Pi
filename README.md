@@ -5,7 +5,7 @@ Building c code: <br />
 qmake, make <br />
 
 Remote module written in android studio java ,<br />
-for connecting robot via Rfcomm serial bluetooth connection <br />
+for controlling robot via Rfcomm serial bluetooth connection <br />
 Please first run remote android app and keep it in listening mode. <br />
 After run raspberry pi code with sudo. The default start mode is off (m_IsRunning = false).  <br />
 You can press start button from android app 
