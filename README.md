@@ -1,7 +1,7 @@
 # BalanceRobotPi
-BalanceRobotPi Raspberry Pi written in c++, 
-build:
-make clean, qmake, make
+BalanceRobotPi Raspberry Pi written in c++ <br />
+building c code: <br />
+make clean, qmake, make <br />
 
 Remote module written in android studio java , uses Rfcomm serial connection via bluetooth <br />
 Please firstly run remote android app and kepp it in listening mode. <br />
