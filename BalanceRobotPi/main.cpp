@@ -730,7 +730,7 @@ void PWM_Calculate()
     pwm_r =int(pwm - aggVs * Speed_Diff + Turn_Need);
     pwm_l =int(pwm + aggVs * Speed_Diff - Turn_Need);
 
-    printf("Angle: %.02f  pwm_r: %3d  pwm_l: %3d\n",Angle_MPU,pwm_r,pwm_l);
+    //printf("Angle: %.02f  pwm_r: %3d  pwm_l: %3d\n",Angle_MPU,pwm_r,pwm_l);
 
     Speed_L = 0;
     Speed_R = 0;
