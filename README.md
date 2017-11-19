@@ -17,6 +17,7 @@ MPU6050 (6-axis motion-tracking device that combines a 3-axis gyroscope and a 3-
 I put it in the middle of two dc motors. This prevents oscillations.
 
 RPi Motor Driver Board for Raspberry (each channel supply 5a)<br />
+https://www.waveshare.com/wiki/RPi_Motor_Driver_Board<br />
 
 //physcal pins<br />
 #define PWMR1  31  IN1 <br />
