@@ -4,7 +4,8 @@ BalanceRobotPi Raspberry Pi written in c++ <br />
 Building c code: <br />
 qmake, make <br />
 
-Remote module written in android studio java , uses Rfcomm serial connection via bluetooth <br />
+Remote module written in android studio java ,<br />
+uses Rfcomm serial connection via bluetooth <br />
 Please first run remote android app and keep it in listening mode. <br />
 After run raspberry pi code with sudo. The default start mode is off (m_IsRunning = false).  <br />
 You can press start button from android app 
