@@ -18,6 +18,7 @@ MPU6050 (6-axis motion-tracking device that combines a 3-axis gyroscope and a 3-
 RPi Motor Driver Board for Raspberry (each channel supply 5a)
 
 Video:https://vimeo.com/243418683
+https://www.youtube.com/watch?v=WB55xWTzZrw
 
 Calibrating your PID Controller
 
