@@ -66,17 +66,13 @@ Add in the following text :<br />
 You should save and exit the nano editor.<br />
 <br />
 The permission on the unit file needs to be set to 644 :<br />
-<br />
 sudo chmod 644 /lib/systemd/system/startrobot.service<br />
 <br />
 Configure systemd<br />
-<br />
 Now the unit file has been defined we can tell systemd to start it during the boot sequence :<br />
-<br />
 sudo systemctl daemon-reload<br />
 sudo systemctl enable startrobot.service<br />
 Reboot the Pi and your custom service should run:<br />
-<br />
 sudo reboot<br />
 <br />
 Calibrating your PID Controller
