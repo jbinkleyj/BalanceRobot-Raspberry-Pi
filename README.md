@@ -39,6 +39,8 @@ https://www.youtube.com/watch?v=WB55xWTzZrw
 
 AutoStart the app on boot:<br />
 
+I assume that your code and exec (bin) will be in /home/pi/BalanceRobotPi folder.<br />
+
 create a script start.sh on your home folder (home/pi)<br />
 place below code in it.<br />
 
