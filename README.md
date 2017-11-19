@@ -5,17 +5,32 @@ make clean, qmake, make
 
 Remote module written in android studio java , uses Rfcomm serial connection via bluetooth
 
-The Balance Robot uses:
+The Balance Robot parts are:
 
 18650 battery holder,
 
 Raspberry Pi 3 
 
-2 x 12V 37mm 350 Rpm 30:1 DC GearMotor with Encoder
+2 x 12V 37mm 350 Rpm 30:1 DC GearMotor with Half Encoder
 
-MPU6050 (6-axis motion-tracking device that combines a 3-axis gyroscope and a 3-axis accelerometer) With MPU6050 , you can get stable angle when the Kalman filter is used. Place the sensor in the lower section and center in the middle of dc motors. This prevents oscillations.
+MPU6050 (6-axis motion-tracking device that combines a 3-axis gyroscope and a 3-axis accelerometer) With MPU6050 , you can get stable angle when the Kalman filter is used. Place the sensor in the lower section, middle part of robot.
+I put it in the middle of two dc motors. This prevents oscillations.
 
 RPi Motor Driver Board for Raspberry (each channel supply 5a)
+
+//physcal pins
+#define PWMR1  31  IN1
+#define PWMR2  33  IN2
+#define PWML1  38  IN3
+#define PWML2  40  IN4
+#define PWMR   32  PWMR
+#define PWML   37  PWML
+
+//encoder define
+#define SPD_INT_L 12   //interrupt R Phys:12 A
+#define SPD_PUL_L 16   //Phys:16
+#define SPD_INT_R 18   //interrupt L Phys:18 B
+#define SPD_PUL_R 22   //Phys:22
 
 Video:https://vimeo.com/243418683
 
