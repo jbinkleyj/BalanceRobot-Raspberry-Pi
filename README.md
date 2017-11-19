@@ -5,9 +5,10 @@ Building c code: <br />
 qmake, make <br />
 
 Remote module written in android studio java , uses Rfcomm serial connection via bluetooth <br />
-Please firstly run remote android app and kepp it in listening mode. <br />
-And run raspberry pi code with sudo. The default start mode is off.  <br />
-You will press start button from android app.. <br />
+Please first run remote android app and keep it in listening mode. <br />
+After run raspberry pi code with sudo. The default start mode is off (m_IsRunning = false).  <br />
+You can press start button from android app 
+to power dc motors<br />or set m_IsRunning variable to thing you want true or false for start option.
 
 For autostart please read below instructions. <br />
 
