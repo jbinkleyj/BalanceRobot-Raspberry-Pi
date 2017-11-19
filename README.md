@@ -38,17 +38,18 @@ Video:https://vimeo.com/243418683
 https://www.youtube.com/watch?v=WB55xWTzZrw
 
 AutoStart the app on boot:<br />
+
 create a script start.sh on your home folder (home/pi)<br />
 place below code in it.<br />
-<br />
+
 #!/bin/bash<br />
 sudo chown root.root /home/pi/BalanceRobotPi/BalanceRobot<br />
 sudo chmod 4755 /home/pi/BalanceRobotPi/BalanceRobot<br />
 cd /home/pi/BalanceRobotPi<br />
 ./BalanceRobot<br />
-<br />
+
 Open a sample unit file using the command as shown below:<br />
-<br />
+
 sudo nano /lib/systemd/system/startrobot.service<br />
 Add in the following text :<br />
 <br />
