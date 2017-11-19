@@ -90,7 +90,7 @@ double aggKp = 40.0;
 double aggKi = 5.0;
 double aggKd = 0.2;
 double aggVs = 15.0; //Velocity wheel
-double aggKm = 1.0; //Constant of pid
+double aggKm = 1.0; //Velocity wheel
 double angle_error = 0.0;
 double Angle_MPU = 0.0;
 double Gyro_MPU = 0.0;
@@ -944,14 +944,13 @@ int main(int argc, char *argv[])
 
     if (getuid())
     {
-        printf("%s", "You must be root!\n");
-        exit(0);
+        printf("%s", "You must be root for starting rfcomm.\n");
+        //exit(0);
     }
-    else
-    {
-        ResetValues();
-        init();
-    }
+
+    ResetValues();
+    init();
+
     return a.exec();
 }
 
