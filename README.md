@@ -16,22 +16,22 @@ Raspberry Pi 3
 MPU6050 (6-axis motion-tracking device that combines a 3-axis gyroscope and a 3-axis accelerometer) With MPU6050 , you can get stable angle when the Kalman filter is used. Place the sensor in the lower section, middle part of robot.
 I put it in the middle of two dc motors. This prevents oscillations.
 
-RPi Motor Driver Board for Raspberry (each channel supply 5a)
+RPi Motor Driver Board for Raspberry (each channel supply 5a)<br />
 
-//physcal pins
-#define PWMR1  31  IN1
-#define PWMR2  33  IN2
-#define PWML1  38  IN3
-#define PWML2  40  IN4
-#define PWMR   32  PWMR
-#define PWML   37  PWML
-
-//encoder define
-#define SPD_INT_L 12   //interrupt R Phys:12 A
-#define SPD_PUL_L 16   //Phys:16
-#define SPD_INT_R 18   //interrupt L Phys:18 B
-#define SPD_PUL_R 22   //Phys:22
-
+//physcal pins<br />
+#define PWMR1  31  IN1 <br />
+#define PWMR2  33  IN2 <br />
+#define PWML1  38  IN3<br />
+#define PWML2  40  IN4<br />
+#define PWMR   32  PWMR<br />
+#define PWML   37  PWML<br />
+<br />
+//encoder define<br />
+#define SPD_INT_L 12   //interrupt R Phys:12 A<br />
+#define SPD_PUL_L 16   //Phys:16<br />
+#define SPD_INT_R 18   //interrupt L Phys:18 B<br />
+#define SPD_PUL_R 22   //Phys:22<br />
+<br />
 Video:https://vimeo.com/243418683
 
 https://www.youtube.com/watch?v=WB55xWTzZrw
