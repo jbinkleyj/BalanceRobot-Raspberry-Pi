@@ -37,6 +37,48 @@ Video:https://vimeo.com/243418683
 
 https://www.youtube.com/watch?v=WB55xWTzZrw
 
+AutoStart the app on boot:<br />
+create a script start.sh on your home folder (home/pi)<br />
+place below code in it.<br />
+<br />
+#!/bin/bash<br />
+sudo chown root.root /home/pi/BalanceRobotPi/BalanceRobot<br />
+sudo chmod 4755 /home/pi/BalanceRobotPi/BalanceRobot<br />
+cd /home/pi/BalanceRobotPi<br />
+./BalanceRobot<br />
+<br />
+Open a sample unit file using the command as shown below:<br />
+<br />
+sudo nano /lib/systemd/system/startrobot.service<br />
+Add in the following text :<br />
+<br />
+ [Unit]<br />
+ Description=My Robot Service<br />
+ After=multi-user.target<br />
+<br />
+ [Service]<br />
+ Type=idle<br />
+ ExecStart=/home/pi/start.sh<br />
+<br />
+ [Install]<br />
+ WantedBy=multi-user.target<br />
+ <br />
+You should save and exit the nano editor.<br />
+<br />
+The permission on the unit file needs to be set to 644 :<br />
+<br />
+sudo chmod 644 /lib/systemd/system/startrobot.service<br />
+<br />
+Configure systemd<br />
+<br />
+Now the unit file has been defined we can tell systemd to start it during the boot sequence :<br />
+<br />
+sudo systemctl daemon-reload<br />
+sudo systemctl enable startrobot.service<br />
+Reboot the Pi and your custom service should run:<br />
+<br />
+sudo reboot<br />
+<br />
 Calibrating your PID Controller
 
 Set all PID constants to zero. This is as good a place to start as any… Slowly increase the P-constant value. While you are doing this, hold the robot to make sure it doesn’t fall over and smash into a million pieces! You should increase the P-constant until the robot responds quickly to any tilting, and then just makes the robot overshoot in the other direction. Now increase the I-constant. This component is a bit tricky to get right. You should keep this relatively low, as it can accumulate errors very quickly. In theory, the robot should be able to stabilise with only the P and I constants set, but will oscillate a lot and ultimately fall over. Raise the D-constant. The derivative components works against any motion, so it helps to dampen any oscillations and reduce overshooting.
