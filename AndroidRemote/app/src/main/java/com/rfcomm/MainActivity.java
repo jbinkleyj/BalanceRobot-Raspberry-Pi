@@ -173,6 +173,9 @@ public class MainActivity extends ActionBarActivity
 
 		commandPacketBlueTooth[0] = (byte)0xAA;
 
+		speed1 = 75;
+		speed2 = 75;
+
 		statusText = (TextView) findViewById(R.id.text_status);
 		mOutEditText = (EditText) findViewById(R.id.edit_text_out);
 		mSendButton = (Button) findViewById(R.id.button_send);
@@ -218,11 +221,12 @@ public class MainActivity extends ActionBarActivity
 		textAngle = (TextView)findViewById(R.id.textAngle);
 
 		seekBar_Speed1 = (SeekBar)findViewById(R.id.seekBar_Speed1);
-		seekBar_Speed1.setMax(255);
-		//seekBar_Speed1.setProgress(MakerStudioDemo.getKAngle());
+		seekBar_Speed1.setMax(100);
+		seekBar_Speed1.setProgress(75);
 
 		seekBar_Speed2 = (SeekBar) findViewById(R.id.seekBar_Speed2);
-		seekBar_Speed2.setMax(255);
+		seekBar_Speed2.setMax(100);
+		seekBar_Speed2.setProgress(75);
 
 		SeekBar.OnSeekBarChangeListener seekBar_Speed1_Listener = new SeekBar.OnSeekBarChangeListener() {
 			@Override
