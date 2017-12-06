@@ -12,8 +12,7 @@ TEMPLATE = app
 SOURCES += main.cpp \
     I2Cdev.cpp \
     MPU6050.cpp \
-    Pid.cpp \
-    Kalmanfilter.cpp
+    Pid.cpp
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked deprecated (the exact warnings
@@ -31,8 +30,7 @@ HEADERS += \
     Kalman.h \
     MPU6050.h \
     Pid.h \
-    ComPacket.h \
-    Kalmanfilter.h
+    ComPacket.h 
 
 LIBS += -L/usr/local/lib -lwiringPi
 
