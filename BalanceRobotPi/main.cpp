@@ -84,11 +84,11 @@ int16_t gx, gy, gz;
 
 double RAD_TO_DEG = 57.2958;
 double timediff = 0.0;
-double Correction = 2.0;
+double Correction = 1.5;
 double Setpoint = 0.0;
 double aggKp = 40.0;
 double aggKi = 5.0;
-double aggKd = 0.2;
+double aggKd = 0.4;
 double aggVs = 15.0; //Velocity wheel
 double aggKm = 1.0; //Velocity wheel
 double angle_error = 0.0;
@@ -102,6 +102,12 @@ double gyroXangle, gyroYangle; // Angle calculate using the gyro only
 double compAngleX, compAngleY; // Calculated angle using a complementary filter
 double kalAngleX, kalAngleY; // Calculated angle using a Kalman filter
 double Input, Output;
+
+//speed control values
+long lastSpeedError = 0;
+long speedAdjust = 0;
+long dSpeedError,adjustLMotor,adjustRMotor;
+long SKp ,SKi ,SKd;
 
 double DataAvg[3];
 
@@ -152,22 +158,31 @@ unsigned int micros()
 
 void ResetValues()
 {
-    Setpoint = 0.0;
-    Speed_Diff = 0;
-    Speed_Diff_ALL = 0;
-    Input = 0.0;
-    Angle_MPU = 0.0;
-    Gyro_MPU = 0.0;
-    Temperature = 0.0;
-    Speed_Need = 0;
-    Turn_Need = 0;  
-    Speed_L = 0;
-    Speed_R = 0;
-    Position_Add = 0;
-    Position_AVG = 0;
-    pwm = 0;
-    pwm_l = 0;
-    pwm_r = 0;
+	Setpoint = 0.0;
+	Speed_Diff = 0;
+	Speed_Diff_ALL = 0;
+	Input = 0.0;
+	Angle_MPU = 0.0;
+	Gyro_MPU = 0.0;
+	Temperature = 0.0;
+	Speed_Need = 0;
+	Turn_Need = 0;  
+	Speed_L = 0;
+	Speed_R = 0;
+	Position_Add = 0;
+	Position_AVG = 0;
+	pwm = 0;
+	pwm_l = 0;
+	pwm_r = 0;
+	//motor speed difference (Left-Right) correction
+	lastSpeedError = 0;
+	speedAdjust = 0;
+	dSpeedError = 0;
+	adjustLMotor = 0;
+	adjustRMotor = 0;
+	SKp = 1L;
+	SKi = 0.5L;
+	SKd = 0.3L; 
 }
 
 bool connetRfComm()
@@ -696,12 +711,24 @@ void PWM_Calculate_Pos()
     Speed_R = 0;
 }
 
+void correctSpeedDiff() 
+{
+  dSpeedError = Speed_Diff - lastSpeedError;
+  
+  speedAdjust = constrain(int((SKp * Speed_Diff) + (SKi * Speed_Diff_ALL) + (SKd * dSpeedError)), -pwnLimit, pwnLimit);
+  lastSpeedError = Speed_Diff;
+
+}
+
 void PWM_Calculate()
 {
-    Speed_Diff = Speed_R + Speed_L;   
-    Setpoint = Correction -  (Speed_Need / 10);
+    Speed_Diff = Speed_R + Speed_L;
+    Speed_Diff_ALL += Speed_Diff;
+
+    Setpoint = Correction +  (Speed_Need / 10);
     Input = Angle_MPU;
     angle_error = abs(Setpoint - Input); //distance away from setpoint
+    correctSpeedDiff() ;
 
     float ftmp = 0;
     ftmp = (Speed_L + Speed_R) * 0.5;
@@ -727,8 +754,8 @@ void PWM_Calculate()
     pwm = -(int)(Output - (Gyro_MPU * aggKd / 5) - (Position_Add / 5));
     //pwm = -(int)(Output);
 
-    pwm_r =int(pwm - aggVs * Speed_Diff + Turn_Need);
-    pwm_l =int(pwm + aggVs * Speed_Diff - Turn_Need);
+    pwm_r =int(pwm - aggVs * speedAdjust + Turn_Need);
+    pwm_l =int(pwm + aggVs * speedAdjust - Turn_Need);
 
     //printf("Angle: %.02f  pwm_r: %3d  pwm_l: %3d\n",Angle_MPU,pwm_r,pwm_l);
 
