@@ -106,7 +106,7 @@ double Input, Output;
 //speed control values
 long lastSpeedError = 0;
 long speedAdjust = 0;
-long dSpeedError,adjustLMotor,adjustRMotor;
+long dSpeedError;
 long SKp ,SKi ,SKd;
 
 double DataAvg[3];
@@ -177,9 +177,7 @@ void ResetValues()
 	//motor speed difference (Left-Right) correction
 	lastSpeedError = 0;
 	speedAdjust = 0;
-	dSpeedError = 0;
-	adjustLMotor = 0;
-	adjustRMotor = 0;
+	dSpeedError = 0;	
 	SKp = 1L;
 	SKi = 0.5L;
 	SKd = 0.3L; 
