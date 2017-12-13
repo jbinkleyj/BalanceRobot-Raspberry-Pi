@@ -1,5 +1,6 @@
 package com.rfcomm;
 
+import java.nio.charset.Charset;
 import java.util.StringTokenizer;
 
 import android.bluetooth.BluetoothAdapter;
@@ -181,6 +182,8 @@ public class MainActivity extends ActionBarActivity
 		mSendButton = (Button) findViewById(R.id.button_send);
 		mConversationView = (ListView) findViewById(R.id.in);
 
+		mOutEditText.setText("selamınaleyküm hacı abe");
+
 		// Initialize the array adapter for the conversation thread
 		mConversationArrayAdapter = new ArrayAdapter<String>(this, R.layout.message) {
 			@Override
@@ -205,8 +208,12 @@ public class MainActivity extends ActionBarActivity
 		mSendButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				// Send a message using content of the edit text widget
-				String message = mOutEditText.getText().toString();
-				sendMessage(message);
+				String message = "espeaktr:" + mOutEditText.getText().toString();
+				if (mBtService != null)
+				{
+					byte[] bytes = message.getBytes();
+					mBtService.sendCmd(bytes);
+				}
 			}
 		});
 
@@ -618,7 +625,7 @@ public class MainActivity extends ActionBarActivity
 			String Error = "0";
 
 			StringTokenizer token = new StringTokenizer(tmpmsg, ":");
-			Log.e(TAG,tmpmsg);
+			//Log.e(TAG,tmpmsg);
 
 			if(token.hasMoreTokens()) {
 				Title = token.nextToken();
