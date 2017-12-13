@@ -213,7 +213,7 @@ public class MainActivity extends ActionBarActivity
 				String message = "espeaktr:" + mOutEditText.getText().toString();
 				if (mBtService != null)
 				{
-					byte[] bytes = message.getBytes();
+					byte[] bytes = message.getBytes(Charset.forName("UTF-8"));
 					mBtService.sendCmd(bytes);
 				}
 			}
