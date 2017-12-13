@@ -2,12 +2,12 @@
 
 Talking BalanceRobot Raspberry Pi written in c++ for Linux<br />
 
-Please install build-essential, alsa , qmake and espeak before compile.
+Please install build-essential, alsa , qmake and espeak before compile. <br />
 
-sudo apt-get install build-essential
-sudo apt-get install alsa
-sudo apt-get install qt4-default
-sudo apt-get install espeak
+sudo apt-get install build-essential <br />
+sudo apt-get install alsa <br />
+sudo apt-get install qt4-default <br />
+sudo apt-get install espeak <br />
 
 Building c code: <br />
 qmake, make <br />
