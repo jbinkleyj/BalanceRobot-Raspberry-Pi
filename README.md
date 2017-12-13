@@ -6,7 +6,7 @@ qmake, make <br />
 
 Remote module written in android studio java ,<br />
 for controlling robot via Rfcomm serial bluetooth connection.<br />
-Please first pair your android device with rapberry pi, and run remote android app on phone and keep it in listening mode. <br />
+Please first pair your android device with rapberry pi, and run remote android app on phone than keep it in listening mode. <br />
 After run raspberry pi code with sudo. The default start mode is off (m_IsRunning = false).  <br />
 You can press start button from android app 
 to power dc motors<br />or set m_IsRunning variable to thing you want true or false for start option.
