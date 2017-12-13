@@ -1,5 +1,6 @@
 # BalanceRobotPi
-Talking BalanceRobot Raspberry Pi written in c++ <br />
+
+Talking BalanceRobot Raspberry Pi written in c++ for Linux<br />
 
 Please install build-essential, alsa , qmake and espeak before compile.
 
