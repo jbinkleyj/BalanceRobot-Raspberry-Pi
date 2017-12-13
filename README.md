@@ -1,4 +1,4 @@
-# BalanceRobotPi
+# BalanceRobot Raspberry Pi
 
 Talking BalanceRobot Raspberry Pi written in c++ for Linux<br />
 
