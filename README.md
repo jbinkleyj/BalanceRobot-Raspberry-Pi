@@ -10,6 +10,7 @@ sudo apt-get install qt4-default <br />
 sudo apt-get install espeak <br />
 
 Building code: <br />
+cd BalanceRobotPi <br />
 qmake, make <br />
 
 Remote module written in android studio java ,<br />
