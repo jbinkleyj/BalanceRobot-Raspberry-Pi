@@ -251,45 +251,41 @@
 	<ListView
 		android:id="@+id/in"
 		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:stackFromBottom="true"
-		android:transcriptMode="alwaysScroll"
+		android:layout_height="match_parent"
+		android:layout_alignParentRight="true"
+		android:layout_below="@+id/C_Plus"
+		android:layout_marginTop="44dp"
 		android:background="#222"
-		android:layout_marginTop="20dp"
-		android:layout_below="@+id/Pids"
-		android:layout_above="@+id/button_send" />
+		android:stackFromBottom="true"
+		android:transcriptMode="alwaysScroll" />
 
 	<Button
 		android:id="@+id/button_send"
+		style="?android:attr/buttonStyleSmall"
 		android:layout_width="wrap_content"
 		android:layout_height="30dp"
-		style="?android:attr/buttonStyleSmall"
-		android:textColor="#FFF"
-		android:textSize="12sp"
-		android:layout_marginLeft="3dp"
-		android:background="@drawable/custom_button"
-		android:text="Send Command"
-		android:layout_weight="1"
-		android:layout_marginTop="3dp"
-		android:layout_alignParentBottom="true"
 		android:layout_alignParentRight="true"
-		/>
+		android:layout_below="@+id/C_Plus"
+		android:layout_marginTop="12dp"
+		android:layout_weight="1"
+		android:background="@drawable/custom_button"
+		android:text="Send Voice"
+		android:textColor="#FFF"
+		android:textSize="12sp" />
 
 	<EditText
 		android:id="@+id/edit_text_out"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
+		android:layout_width="match_parent"
+		android:layout_height="30dp"
+		android:layout_below="@+id/C_Plus"
+		android:layout_marginTop="12dp"
+		android:layout_marginRight="3dp"
+		android:layout_toLeftOf="@+id/button_send"
+		android:background="@color/colorStart"
 		android:inputType="textShortMessage|textMultiLine"
 		android:maxLines="4"
-		android:textSize="12sp"
-		android:layout_marginRight="3dp"
-		android:layout_marginTop="3dp"
-		android:layout_alignParentBottom="true"
-		android:layout_alignParentLeft="true"
-		android:background="@color/textback"
 		android:textColor="#FFF"
-		android:layout_toStartOf="@+id/button_send"
-		android:layout_below="@+id/in" />
+		android:textSize="12sp" />
 
 </RelativeLayout>
 
