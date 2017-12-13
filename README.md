@@ -13,6 +13,9 @@ Building code: <br />
 cd BalanceRobotPi <br />
 qmake, make <br />
 
+in main.cpp, plaese change the mac adress to your android phone mac
+std::string RfCommAndroidMac = "XX:XX:XX:XX:XX:XX";// change it with your phone mac
+
 Remote module written in android studio java ,<br />
 for controlling robot via Rfcomm serial bluetooth connection.<br />
 Please first pair your android device with rapberry pi, and run remote android app on phone than keep it in listening mode. <br />
