@@ -13,6 +13,7 @@ import android.os.Message;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.support.v7.app.ActionBarActivity;
+import android.text.InputType;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -181,6 +182,7 @@ public class MainActivity extends ActionBarActivity
 		mOutEditText = (EditText) findViewById(R.id.edit_text_out);
 		mSendButton = (Button) findViewById(R.id.button_send);
 		mConversationView = (ListView) findViewById(R.id.in);
+		mOutEditText.setInputType(InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
 
 		mOutEditText.setText("selamınaleyküm hacı abe");
 
