@@ -805,13 +805,13 @@ void Robot_Control()
 
 void speakTurkishRobot(std::string sound)
 {
-    std::string espeakBuff = std::string ("espeak -v tr+f5 ") + '"' + sound + '"';
+    std::string espeakBuff = std::string ("espeak -v tr+f5 ") + '"' + sound + '"' + " --stdout|aplay";
     exec(espeakBuff.c_str());
 }
 
 void speakEnglishRobot(std::string sound)
 {
-    std::string espeakBuff = std::string ("espeak -ven-us+f5 -s170  ") + '"' + sound + '"';
+    std::string espeakBuff = std::string ("espeak -ven-us+f5 -s170  ") + '"' + sound + '"' + " --stdout|aplay";
     exec(espeakBuff.c_str());
 }
 
