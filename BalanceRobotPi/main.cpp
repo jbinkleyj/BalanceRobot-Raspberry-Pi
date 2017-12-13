@@ -58,7 +58,7 @@ int pwnLimit = 100;
 MPU6050 accelgyro;
 Kalman kalmanX;
 Kalman kalmanY;
-std::string RfCommAndroidMac = "5C:2E:59:D6:67:4B";// change it with your phone mac
+std::string RfCommAndroidMac = "XX:XX:XX:XX:XX:XX";// change it to your android phone mac adress
 
 bool m_IsRunning = false;
 bool m_IsMainThreadRunning = false;
@@ -121,7 +121,7 @@ template<typename T>
 T StringToNumber(const std::string& numberAsString)
 {
     T valor;
-    
+
     std::stringstream stream(numberAsString);
     stream >> valor;
     if (stream.fail()) {
@@ -189,31 +189,31 @@ void ResetValues()
 bool connetRfComm()
 {
     struct termios options;
-    
+
     // linux
     fd = open("/dev/rfcomm0", O_RDWR | O_NOCTTY | O_NONBLOCK);
-    
+
     /* get the current options */
     tcgetattr(fd, &options);
-    
+
     /* Set Baud Rate */
     cfsetospeed (&options, (speed_t)B9600);
     cfsetispeed (&options, (speed_t)B9600);
-    
+
     /* Setting other Port Stuff */
     options.c_cflag     &=  ~PARENB;            // Make 8n1
     options.c_cflag     &=  ~CSTOPB;
     options.c_cflag     &=  ~CSIZE;
     options.c_cflag     |=  CS8;
-    
+
     options.c_cflag     &=  ~CRTSCTS;           // no flow control
     options.c_cc[VMIN]   =  1;                  // read doesn't block
     options.c_cc[VTIME]  =  1;                  // 0.1 seconds read timeout
     options.c_cflag     |=  CREAD | CLOCAL;     // turn on READ & ignore ctrl lines
-    
+
     /* Make raw */
     cfmakeraw(&options);
-    
+
     /* Flush Port, then applies attributes */
     tcflush( fd, TCIFLUSH );
     if ( tcsetattr ( fd, TCSANOW, &options ) != 0)
@@ -221,12 +221,12 @@ bool connetRfComm()
         std::cout << "Error " << errno << " from tcsetattr" << std::endl;
         return false;
     }
-    
+
     return true;
 }
 
 void disConnetRfComm() {
-    
+
     // If the port is actually open, close it
     if (fd != -1) {
         close(fd);
@@ -238,18 +238,18 @@ uchar *trim(uchar *s)
 {
     uchar *first;
     uchar *last;
-    
+
     first = s;
     while(isspace(*first))
         ++first;
-    
+
     last = first + strlen((const char*)first) - 1;
     while(last > first && isspace(*last))
         --last;
-    
+
     memmove(s, first, last - first + 1);
     s[last - first + 1] = '\0';
-    
+
     return s;
 }
 
@@ -258,7 +258,7 @@ uchar *trim(uchar *s)
 void getStatusFromConfigurationFile() {
     boost::property_tree::ptree pt;
     boost::property_tree::ini_parser::read_ini("settings.ini", pt);
-    
+
     aggKp       = StringToNumber<double>(pt.get<std::string>("Robot.aggKp"));
     aggKi       = StringToNumber<double>(pt.get<std::string>("Robot.aggKi"));
     aggKd       = StringToNumber<double>(pt.get<std::string>("Robot.aggKd"));
@@ -266,17 +266,17 @@ void getStatusFromConfigurationFile() {
     aggKm       = StringToNumber<double>(pt.get<std::string>("Robot.aggKm"));
     Correction  = StringToNumber<double>(pt.get<std::string>("Robot.Correction"));
     RfCommAndroidMac = pt.get<std::string>("Robot.RfCommAndroidMac");
-    
+
     printf("aggKp: %.2f aggKi: %.2f aggKd: %.2f\n",aggKp,aggKi,aggKd);
-    
+
 }
 
 void updateConfigurationFileFromStatus() {
     boost::property_tree::ptree pt;
     boost::property_tree::ini_parser::read_ini("settings.ini", pt);
-    
+
     printf("aggKp: %.2f aggKi: %.2f aggKd: %.2f\n",aggKp,aggKi,aggKd);
-    
+
     pt.put("Robot.aggKp", aggKp);
     pt.put("Robot.aggKi", aggKi);
     pt.put("Robot.aggKd", aggKd);
@@ -284,15 +284,15 @@ void updateConfigurationFileFromStatus() {
     pt.put("Robot.aggKm", aggKm);
     pt.put("Robot.Correction", Correction);
     pt.put("Robot.RfCommAndroidMac", RfCommAndroidMac);
-    
+
     boost::property_tree::ini_parser::write_ini("settings.ini", pt);
 }
 
 void createConfigurationFile() {
     boost::property_tree::ptree pt;
-    
+
     printf("aggKp: %.2f aggKi: %.2f aggKd: %.2f\n",aggKp,aggKi,aggKd);
-    
+
     //create with default parameters
     pt.put("Robot.aggKp", aggKp);
     pt.put("Robot.aggKi", aggKi);
@@ -301,7 +301,7 @@ void createConfigurationFile() {
     pt.put("Robot.aggKm", aggKm);
     pt.put("Robot.Correction", Correction);
     pt.put("Robot.RfCommAndroidMac", RfCommAndroidMac);
-    
+
     boost::property_tree::ini_parser::write_ini("settings.ini", pt);
 }
 
@@ -358,38 +358,38 @@ int sdp_search_spp(sdp_session_t *sdp, uint8_t *channel)
     uuid_t svclass;
     uint16_t attr;
     int err;
-    
+
     if (!sdp)
         return -1;
-    
+
     sdp_uuid16_create(&svclass, SERIAL_PORT_SVCLASS_ID);
     srch = sdp_list_append(NULL, &svclass);
-    
+
     attr = SDP_ATTR_PROTO_DESC_LIST;
     attrs = sdp_list_append(NULL, &attr);
-    
+
     err = sdp_service_search_attr_req(sdp, srch, SDP_ATTR_REQ_INDIVIDUAL, attrs, &rsp);
     if (err)
         return -1;
-    
+
     sdp_list_t *r = rsp;
-    
+
     // go through each of the service records
     for (; r; r = r->next ) {
         sdp_record_t *rec = (sdp_record_t*) r->data;
         sdp_list_t *proto_list;
-        
+
         // get a list of the protocol sequences
         if( sdp_get_access_protos( rec, &proto_list ) == 0 ) {
             sdp_list_t *p = proto_list;
-            
+
             // go through each protocol sequence
             for( ; p ; p = p->next ) {
                 sdp_list_t *pds = (sdp_list_t*)p->data;
-                
+
                 // go through each protocol list of the protocol sequence
                 for( ; pds ; pds = pds->next ) {
-                    
+
                     // check the protocol attributes
                     sdp_data_t *d = (sdp_data_t*)pds->data;
                     int proto = 0;
@@ -425,11 +425,11 @@ bool bindRFComm(const char* dest)
     bdaddr_t target;
     sdp_session_t *session = 0;
     str2ba(dest, &target );
-    
+
     //connect to the SDP server running on the remote machine
     session = sdp_connect( &my_bdaddr_any, &target, 0 );
     u_int8_t channel;
-    
+
     if(sdp_search_spp(session,&channel) == 0)
     {
         printf("Found rfcomm on channel: %d\n",channel);
@@ -443,14 +443,14 @@ bool bindRFComm(const char* dest)
         printf("Rfcomm service not found\n");
         return false;
     }
-    
+
     return true;
 }
 
 void RobotDirection()
 {
     unsigned char Speed = SerialPacket.m_Buffer[1];
-    
+
     if(SerialPacket.m_Buffer[3] == 0x07)
     {
         m_IsRunning = true, ResetValues();
@@ -466,7 +466,7 @@ void RobotDirection()
         exec("aplay r2d2.wav");
         return;
     }
-    
+
     switch(SerialPacket.m_Buffer[3])
     {
     case 0x00:Speed_Need = 0;Turn_Need = 0;Position_Add = 0;break;
@@ -478,7 +478,7 @@ void RobotDirection()
     case 0x06: Correction = Correction - 0.1; break;
     default:break;
     }
-    
+
     updateConf();
     sprintf(buf,"Robot Direction(0x%02X): Sn: %d Tn: %d Cr: %0.2f",SerialPacket.m_Buffer[3],Speed_Need,Turn_Need,Correction);
     printf("%s\n",buf);
@@ -491,7 +491,7 @@ void UpdatePID()
     Upper = SerialPacket.m_Buffer[2];
     Lower = SerialPacket.m_Buffer[1];
     NewPara = (float)(Upper<<8 | Lower)/100.0;
-    
+
     switch(SerialPacket.m_Buffer[3])
     {
     case 0x01:aggKp = aggKm * NewPara;break;
@@ -501,7 +501,7 @@ void UpdatePID()
     case 0x05:aggKm = NewPara;break;
     default:break;
     }
-    
+
     updateConf();
     sprintf(buf,"\nUpdate PID(0x%02X) Kp: %0.2f Ki: %0.2f Kd: %0.2f  Vs: %0.2f  Km: %0.2f",SerialPacket.m_Buffer[3],aggKp,aggKi,aggKd,aggVs,aggKm);
     printf("%s\n",buf);
@@ -512,7 +512,7 @@ void UserComunication()
     if(SerialPacket.m_PackageOK == true)
     {
         SerialPacket.m_PackageOK = false;
-        
+
         switch(SerialPacket.m_Buffer[4])
         {
         case 0x01:  break;
@@ -530,21 +530,21 @@ void UserComunication()
 void MySerialEvent(uchar c)
 {
     uchar tmp = 0;
-    
+
     for(int i = 5; i > 0; i--)
     {
         SerialPacket.m_Buffer[i] = SerialPacket.m_Buffer[i-1];
     }
-    
+
     SerialPacket.m_Buffer[0] = c;
-    
+
     if(SerialPacket.m_Buffer[5] == 0xAA)
     {
         tmp = SerialPacket.m_Buffer[1]^SerialPacket.m_Buffer[2]^SerialPacket.m_Buffer[3];
         if(tmp == SerialPacket.m_Buffer[0])
         {
             SerialPacket.m_PackageOK = true;
-            
+
             UserComunication();
         }
     }
@@ -552,21 +552,21 @@ void MySerialEvent(uchar c)
 
 
 int getData(char* data) {
-    
+
     int n = 0,
             spot = 0;
     char buf = '\0';
-    
+
     // If the port is actually open, read the data
     if (fd != -1) {
-        
+
         do {
             n = read( fd, &buf, 1 );
             MySerialEvent((uchar)buf);
             sprintf( &data[spot], "%c", buf );
             spot += n;
         } while( buf != '\r' && n > 0);
-        
+
         data[spot + 1] = '\0';
         return spot;
     }
@@ -589,24 +589,24 @@ bool sendData(char *data, unsigned int buf_size)
 void calculateGyro()
 {
     //currentAngle = 0.9934 * (previousAngle + gyroAngle) + 0.0066 * (accAngle)
-    
+
     timediff = (micros() - timer)/1000;
     double dt = (double)(micros() - timer) / 1000000; // Calculate delta time
-    
+
     timer = micros();
-    
+
     accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
     // display accel/gyro x/y/z values
     //printf("accel/gyro: %6hd %6hd %6hd   %6hd %6hd %6hd\n",ax,ay,az,gx,gy,gz);
-    
+
     accX = (int16_t)(ax);
     accY = (int16_t)(ay);
     accZ = (int16_t)(az);
-    
+
     gyroX = (int16_t)(gx);
     gyroY = (int16_t)(gy);
     gyroZ = (int16_t)(gz);
-    
+
     // It is then converted from radians to degrees
 #ifdef RESTRICT_PITCH // Eq. 25 and 26
     double roll  = atan2(accY, accZ) * RAD_TO_DEG;
@@ -615,10 +615,10 @@ void calculateGyro()
     double roll  = atan(accY / sqrt(accX * accX + accZ * accZ)) * RAD_TO_DEG;
     double pitch = atan2(-accX, accZ) * RAD_TO_DEG;
 #endif
-    
+
     double gyroXrate = gyroX / 131.0; // Convert to deg/s
     double gyroYrate = gyroY / 131.0; // Convert to deg/s
-    
+
 #ifdef RESTRICT_PITCH
     // This fixes the transition problem when the accelerometer angle jumps between -180 and 180 degrees
     if ((roll < -90 && kalAngleX > 90) || (roll > 90 && kalAngleX < -90)) {
@@ -628,7 +628,7 @@ void calculateGyro()
         gyroXangle = roll;
     } else
         kalAngleX = kalmanX.getAngle(roll, gyroXrate, dt); // Calculate the angle using a Kalman filter
-    
+
     if (abs(kalAngleX) > 90)
         gyroYrate = -gyroYrate; // Invert rate, so it fits the restriced accelerometer reading
     kalAngleY = kalmanY.getAngle(pitch, gyroYrate, dt);
@@ -641,27 +641,27 @@ void calculateGyro()
         gyroYangle = pitch;
     } else
         kalAngleY = kalmanY.getAngle(pitch, gyroYrate, dt); // Calculate the angle using a Kalman filter
-    
+
     if (abs(kalAngleY) > 90)
         gyroXrate = -gyroXrate; // Invert rate, so it fits the restriced accelerometer reading
     kalAngleX = kalmanX.getAngle(roll, gyroXrate, dt); // Calculate the angle using a Kalman filter
 #endif
-    
+
     if (gyroXangle < -180 || gyroXangle > 180)
         gyroXangle = kalAngleX;
     if (gyroYangle < -180 || gyroYangle > 180)
         gyroYangle = kalAngleY;
-    
+
     DataAvg[2] = DataAvg[1];
     DataAvg[1] = DataAvg[0];
     DataAvg[0] = kalAngleX;
-    
+
     Angle_MPU = (DataAvg[0]+DataAvg[1]+DataAvg[2])/3;
-    
+
     Gyro_MPU = gyroXrate;
     Temperature = (double)accelgyro.getTemperature() / 340.0 + 36.53;
     // printf("Angle_MPU: %.2f  Time_Diff: %.1f\n",Angle_MPU,timediff);
-    
+
 }
 
 void encodeL (void)
@@ -670,7 +670,7 @@ void encodeL (void)
         Speed_L += 1;
     else
         Speed_L -= 1;
-    
+
     //printf("Speed_L: %d\n",Speed_L);
 }
 
@@ -680,7 +680,7 @@ void encodeR (void)
         Speed_R += 1;
     else
         Speed_R -= 1;
-    
+
     //printf("Speed_R: %d\n",Speed_R);
 }
 
@@ -692,23 +692,23 @@ void PWM_Calculate_Pos()
         Position_AVG = ftmp +0.5;
     else
         Position_AVG = ftmp -0.5;
-    
+
     Speed_Diff = Speed_L - Speed_R;
     Speed_Diff_ALL += Speed_Diff;
-    
+
     Position_Add += Position_AVG;  //position
     //Position_Add += Speed_Need;  //
     Position_Add = constrain(Position_Add, -pwnLimit, pwnLimit);
-    
+
     pwm =  (Angle_MPU + Correction  -  (Speed_Need / 10)) * aggKp           //P
             + Position_Add * aggKi        //I
             + Gyro_MPU * aggKd;           //D
-    
+
     pwm_r =int(pwm + Turn_Need );
     pwm_l =int(pwm - Turn_Need );
-    
+
     //printf("Angle: %.02f  pwm_r: %5d  pwm_l: %5d\n",Angle_MPU,pwm_r,pwm_l);
-    
+
     Speed_L = 0;
     Speed_R = 0;
 }
@@ -716,32 +716,32 @@ void PWM_Calculate_Pos()
 void correctSpeedDiff() 
 {
     dSpeedError = Speed_Diff - lastSpeedError;
-    
+
     speedAdjust = constrain(int((SKp * Speed_Diff) + (SKi * Speed_Diff_ALL) + (SKd * dSpeedError)), -pwnLimit, pwnLimit);
     lastSpeedError = Speed_Diff;
-    
+
 }
 
 void PWM_Calculate()
 {
     Speed_Diff = Speed_R + Speed_L;
     Speed_Diff_ALL += Speed_Diff;
-    
+
     Setpoint = Correction +  (Speed_Need / 10);
     Input = Angle_MPU;
     angle_error = abs(Setpoint - Input); //distance away from setpoint
     correctSpeedDiff() ;
-    
+
     float ftmp = 0;
     ftmp = (Speed_L + Speed_R) * 0.5;
     if( ftmp > 0)
         Position_AVG = ftmp +0.5;
     else
         Position_AVG = ftmp -0.5;
-    
+
     Position_Add += Position_AVG;  //position
     Position_Add = constrain(Position_Add, -pwnLimit, pwnLimit);
-    
+
     if (angle_error < 10)
     {   //we're close to setpoint, use conservative tuning parameters
         balancePID.SetTunings(aggKp/3, aggKi/3, aggKd/3);
@@ -750,17 +750,17 @@ void PWM_Calculate()
     {   //we're far from setpoint, use aggressive tuning parameters
         balancePID.SetTunings(aggKp,   aggKi,  aggKd);
     }
-    
+
     balancePID.Compute();
-    
+
     pwm = -(int)(Output - (Gyro_MPU * aggKd / 5) - (Position_Add / 5));
     //pwm = -(int)(Output);
-    
+
     pwm_r =int(pwm - aggVs * speedAdjust + Turn_Need);
     pwm_l =int(pwm + aggVs * speedAdjust - Turn_Need);
-    
+
     //printf("Angle: %.02f  pwm_r: %3d  pwm_l: %3d\n",Angle_MPU,pwm_r,pwm_l);
-    
+
     Speed_L = 0;
     Speed_R = 0;
 }
@@ -772,33 +772,33 @@ void Robot_Control()
         digitalWrite(PWMR1, HIGH);
         digitalWrite(PWMR2, LOW);
     }
-    
+
     if (pwm_l>0)
     {
         digitalWrite(PWML1, LOW);
         digitalWrite(PWML2, HIGH);
     }
-    
+
     if (pwm_r<0)
     {
         digitalWrite(PWMR1, LOW);
         digitalWrite(PWMR2, HIGH);
         pwm_r =- pwm_r;  //cchange to positive
     }
-    
+
     if (pwm_l<0)
     {
         digitalWrite(PWML1, HIGH);
         digitalWrite(PWML2, LOW);
         pwm_l = -pwm_l;
     }
-    
+
     if( Angle_MPU > 45 || Angle_MPU < -45 || !m_IsRunning)
     {
         pwm_l = 0;
         pwm_r = 0;
     }
-    
+
     softPwmWrite(PWML, pwm_l);
     softPwmWrite(PWMR, pwm_r);
 }
@@ -820,9 +820,9 @@ PI_THREAD (serialThread)
     while (m_IsSerialThreadRunning)
     {
         char buffer[1024];
-        
+
         getData(buffer);
-        
+
         if(buffer[0] != '\0')
         {
             if(strstr (buffer,"espeaktr:"))
@@ -834,15 +834,15 @@ PI_THREAD (serialThread)
                 speakEnglishRobot(std::string(buffer).erase(0,9));
             }
         }
-        
+
         sprintf(buf, "Data:%d:%d:%0.2f:%d:%d:%d:%d:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:%0.2f:",
                 pwm_l, pwm_r,Angle_MPU,Speed_Need,Turn_Need,Speed_L,Speed_R,aggKp,aggKi,aggKd,aggVs,aggKm,Temperature,Correction,angle_error);
-        
+
         sendData(buf,strlen(buf));
-        
+
         ::usleep(SLEEP_PERIOD * SERIAL_TIME);
     }
-    
+
     return 0;
 }
 
@@ -856,28 +856,28 @@ PI_THREAD (mainThread)
             softPwmWrite(PWMR, 0);
             continue;
         }
-        
+
         calculateGyro();
         PWM_Calculate();
         //PWM_Calculate_Pos();
         Robot_Control();
-        
+
         ::usleep(SLEEP_PERIOD * SAMPLE_TIME);
     }
-    
+
     return 0;
 }
 
 void initRfcomm()
 {
     bool rfcomm_connected = false;
-    printf("\nTrying to connect rfcomm port...\n");
-    
+    printf("Trying to connect rfcomm port...\n");
+
     if(!connetRfComm())
     {
         fprintf (stderr, "Unable to connet rfcomm0: %s\n", strerror (errno));
         printf("Trying to bind rfcomm port...\n");
-        
+
         if(bindRFComm(RfCommAndroidMac.c_str()))
         {
             if(connetRfComm())
@@ -894,14 +894,13 @@ void initRfcomm()
         rfcomm_connected = true;
         printf("Connet rfcomm0 successful.\n\n");
     }
-    
+
     if(rfcomm_connected)
     {
         m_IsSerialThreadRunning = true;
         piThreadCreate (&serialThread) ;
-        printf("serialThread successful.\n\n");
     }
-    
+
 }
 
 void init()
@@ -909,11 +908,11 @@ void init()
     bool isMPU6050_Found = false;
     m_IsMainThreadRunning = false;
     m_IsSerialThreadRunning = false;
-    
+
     // initialize device
     printf("\nInitializing I2C devices.\n");
     accelgyro.initialize();
-    
+
     if(accelgyro.testConnection())
     {
         printf("MPU6050 connection successful.\n\n" );
@@ -923,7 +922,7 @@ void init()
     {
         printf("MPU6050 connection failed.\n\n");
     }
-    
+
     if (wiringPiSetupPhys () < 0)
     {
         fprintf (stderr, "Unable to setup wiringPiSetupGpio: %s\n\n", strerror (errno)) ;
@@ -934,12 +933,12 @@ void init()
         pinMode(PWML2, OUTPUT);
         pinMode(PWMR1, OUTPUT);
         pinMode(PWMR2, OUTPUT);
-        
+
         printf("Set pinModes ok.\n");
-        
+
         softPwmCreate(PWML,0,pwnLimit);
         softPwmCreate(PWMR,0,pwnLimit);
-        
+
         if (wiringPiISR (SPD_INT_L, INT_EDGE_FALLING, &encodeL) < 0)
         {
             fprintf (stderr, "Unable to setup ISR for left channel: %s\n", strerror (errno));
@@ -949,7 +948,7 @@ void init()
         {
             printf("Setup encodeL for left channel successful.\n");
         }
-        
+
         if (wiringPiISR (SPD_INT_R, INT_EDGE_FALLING, &encodeR) < 0)
         {
             fprintf (stderr, "Unable to setup ISR for right channel: %s\n", strerror (errno));
@@ -959,29 +958,29 @@ void init()
         {
             printf("Setup encodeR for right channel successful.\n");
         }
-        
+
         printf("wiringPiSetupPhys ok.\n\n");
-        
+
         initRfcomm();
-        
+
         initConf();
-        
+
         balancePID.SetMode(AUTOMATIC);
         balancePID.SetSampleTime(SAMPLE_TIME);
         balancePID.SetOutputLimits(-pwnLimit, pwnLimit);
-        
+
         DataAvg[0]=0; DataAvg[1]=0; DataAvg[2]=0;
-        
+
         if(isMPU6050_Found)
         {
             m_IsMainThreadRunning = true;
             piThreadCreate (&mainThread) ;
         }
     }
-    
+
     exec("aplay r2d2.wav");
     speakEnglishRobot("press start to run robot");
-    
+
     timer = micros();
 }
 
@@ -991,9 +990,9 @@ void  ExitHandler(int sig)
     m_IsMainThreadRunning = false;
     m_IsSerialThreadRunning = false;
     usleep(1000 * 100);
-    
+
     printf("\b\bExiting...\n");
-    
+
     softPwmWrite(PWML, 0);
     softPwmWrite(PWMR, 0);
     exit(0);
@@ -1003,16 +1002,16 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
     signal(SIGINT, ExitHandler);
-    
+
     if (getuid())
     {
         printf("%s", "You must be root for starting rfcomm.\n");
         //exit(0);
     }
-    
+
     ResetValues();
     init();
-    
+
     return a.exec();
 }
 
@@ -1022,17 +1021,17 @@ int main(int argc, char *argv[])
     fd = wiringPiI2CSetup (0x68);
     wiringPiI2CWriteReg8 (fd,0x6B,0x00);//set the sleep unenable
     printf("set 0x6B=%X\n",wiringPiI2CReadReg8 (fd,0x6B));
-    
+
     while(1)
     {
         printf("My valueX:%X+%X\n",wiringPiI2CReadReg8(fd, 0x43),wiringPiI2CReadReg8(fd, 0x44));
         printf("My valueY:%X+%X\n",wiringPiI2CReadReg8(fd, 0x45),wiringPiI2CReadReg8(fd, 0x46));
         printf("My valueZ:%X+%X\n---------------------\n",wiringPiI2CReadReg8(fd, 0x47),wiringPiI2CReadReg8(fd, 0x48));
-        
+
         printf("My valueX:%X\n",wiringPiI2CReadReg16(fd, 0x43));
         printf("My valueY:%X\n",wiringPiI2CReadReg16(fd, 0x45));
         printf("My valueZ:%X\n------------------------\n",wiringPiI2CReadReg16(fd, 0x47));
-        
+
         delay(1000);
     }
 }*/
