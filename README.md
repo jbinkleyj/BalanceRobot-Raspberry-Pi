@@ -20,7 +20,7 @@ After run raspberry pi code with sudo. The default start mode is off (m_IsRunnin
 You can press start button from android app 
 to power dc motors<br />or set m_IsRunning variable to thing you want true or false for start option.
 
-For autostart please read below instructions. <br />
+For autostart the app on raspberry boot please read below instructions. <br />
 
 The Balance Robot parts are:
 
