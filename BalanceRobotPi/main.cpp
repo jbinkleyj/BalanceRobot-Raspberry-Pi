@@ -58,7 +58,7 @@ int pwnLimit = 100;
 MPU6050 accelgyro;
 Kalman kalmanX;
 Kalman kalmanY;
-std::string RfCommAndroidMac = "XX:XX:XX:XX:XX:XX";// change it to your android phone mac adress
+std::string RfCommAndroidMac = "XX:XX:XX:XX:XX:XX";// change it to your android phone mac address
 
 bool m_IsRunning = false;
 bool m_IsMainThreadRunning = false;
