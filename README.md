@@ -1,5 +1,12 @@
 # BalanceRobotPi
-BalanceRobotPi Raspberry Pi written in c++ <br />
+Talking BalanceRobot Raspberry Pi written in c++ <br />
+
+Please install build-essential, alsa , qmake and espeak before compile.
+
+sudo apt-get install build-essential
+sudo apt-get install alsa
+sudo apt-get install qt4-default
+sudo apt-get install espeak
 
 Building c code: <br />
 qmake, make <br />
