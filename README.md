@@ -13,7 +13,7 @@ Building code: <br />
 cd BalanceRobotPi <br />
 qmake, make <br />
 
-in main.cpp, plaese change the mac adress to your android phone mac
+in BalanceRobotPi/main.cpp, plaese change the mac address to your android phone mac address
 std::string RfCommAndroidMac = "XX:XX:XX:XX:XX:XX";// change it with your phone mac
 
 Remote module written in android studio java ,<br />
