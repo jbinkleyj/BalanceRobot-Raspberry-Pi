@@ -60,6 +60,7 @@ MPU6050 accelgyro;
 Kalman kalmanX;
 Kalman kalmanY;
 std::string RfCommAndroidMac = "5C:2E:59:D6:67:4B";// change it with your android phone mac address
+std::string current_sound = "";
 
 bool m_IsRunning = false;
 bool m_IsMainThreadRunning = false;
@@ -158,6 +159,18 @@ unsigned int micros()
     gettimeofday(&timer, NULL);
     unsigned int time_in_micros = 1000000 * timer.tv_sec + timer.tv_usec;
     return time_in_micros;
+}
+
+PI_THREAD (speakTurkish)
+{
+    speakTurkishRobot(current_sound);
+    return 0;
+}
+
+PI_THREAD (speakEnglish)
+{
+    speakEnglishRobot(current_sound);
+    return 0;
 }
 
 void ResetValues()
@@ -455,7 +468,8 @@ void RobotDirection()
     if(SerialPacket.m_Buffer[3] == 0x07)
     {
         m_IsRunning = true, ResetValues();
-        speakEnglishRobot("turk robot has been started");
+        current_sound = std::string("turk robot has been started");
+        piThreadCreate (&speakEnglish) ;
         exec("aplay r2d2.wav");
         return;
     }
@@ -463,7 +477,8 @@ void RobotDirection()
     {
         m_IsRunning = false; ResetValues();
         balancePID.Reset();
-        speakEnglishRobot("turk robot has been stopped");
+        current_sound = std::string("turk robot has been stopped");
+        piThreadCreate (&speakEnglish) ;
         exec("aplay r2d2.wav");
         return;
     }
@@ -471,10 +486,10 @@ void RobotDirection()
     switch(SerialPacket.m_Buffer[3])
     {
     case 0x00:Speed_Need = 0;Turn_Need = 0;Position_Add = 0;break;
-    case 0x01: Speed_Need = -Speed; break;
-    case 0x02: Speed_Need = Speed; break;
-    case 0x03: Turn_Need = Speed; break;
-    case 0x04: Turn_Need = -Speed; break;
+    case 0x01: Speed_Need = -Speed;current_sound = std::string("forward");piThreadCreate (&speakEnglish) ; break;
+    case 0x02: Speed_Need = Speed;current_sound = std::string("back");piThreadCreate (&speakEnglish) ; break;
+    case 0x03: Turn_Need = Speed; current_sound = std::string("left");piThreadCreate (&speakEnglish) ; break;
+    case 0x04: Turn_Need = -Speed; current_sound = std::string("right");piThreadCreate (&speakEnglish) ; break;
     case 0x05: Correction = Correction + 0.1; break;
     case 0x06: Correction = Correction - 0.1; break;
     default:break;
@@ -828,6 +843,7 @@ void Robot_Control()
     softPwmWrite(PWMR, pwm_r);
 }
 
+
 void speakTurkishRobot(std::string sound)
 {
     std::string espeakBuff = std::string ("espeak -v tr+f5 ") + '"' + sound + '"' + " --stdout|aplay";
@@ -851,12 +867,14 @@ PI_THREAD (serialThread)
         if(buffer[0] != '\0')
         {
             if(strstr (buffer,"espeaktr:"))
-            {
-                speakTurkishRobot(std::string(buffer).erase(0,9)); // you may change it for your country
+            {              
+                current_sound = std::string(buffer).erase(0,9);
+                piThreadCreate (&speakTurkish) ;
             }
             else if(strstr (buffer,"espeaken:"))
             {
-                speakEnglishRobot(std::string(buffer).erase(0,9));
+                current_sound = std::string(buffer).erase(0,9);
+                piThreadCreate (&speakEnglish) ;
             }
         }
 
@@ -1006,7 +1024,8 @@ void init()
     SetAlsaMasterVolume(100);
 
     exec("aplay r2d2.wav");
-    speakEnglishRobot("press start to run robot");
+    current_sound = std::string("press start to run robot");
+    piThreadCreate (&speakEnglish) ;
 
     timer = micros();
 }
