@@ -28,6 +28,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <pthread.h>
 #include <wiringPi.h>
+#include <alsa/asoundlib.h>
 
 //#include <wiringPiI2C.h>
 //sudo apt-get install libbluetooth-dev
@@ -58,7 +59,7 @@ int pwnLimit = 100;
 MPU6050 accelgyro;
 Kalman kalmanX;
 Kalman kalmanY;
-std::string RfCommAndroidMac = "XX:XX:XX:XX:XX:XX";// change it to your android phone mac address
+std::string RfCommAndroidMac = "5C:2E:59:D6:67:4B";// change it with your android phone mac address
 
 bool m_IsRunning = false;
 bool m_IsMainThreadRunning = false;
@@ -84,7 +85,7 @@ int16_t gx, gy, gz;
 
 double RAD_TO_DEG = 57.2958;
 double timediff = 0.0;
-double Correction = 1.5;
+double Correction = 0.0;
 double Setpoint = 0.0;
 double aggKp = 40.0;
 double aggKi = 5.0;
@@ -470,10 +471,10 @@ void RobotDirection()
     switch(SerialPacket.m_Buffer[3])
     {
     case 0x00:Speed_Need = 0;Turn_Need = 0;Position_Add = 0;break;
-    case 0x01: Speed_Need = -Speed; speakEnglishRobot("forward");break;
-    case 0x02: Speed_Need = Speed; speakEnglishRobot("back");break;
-    case 0x03: Turn_Need = Speed; speakEnglishRobot("left");break;
-    case 0x04: Turn_Need = -Speed; speakEnglishRobot("right");break;
+    case 0x01: Speed_Need = -Speed; break;
+    case 0x02: Speed_Need = Speed; break;
+    case 0x03: Turn_Need = Speed; break;
+    case 0x04: Turn_Need = -Speed; break;
     case 0x05: Correction = Correction + 0.1; break;
     case 0x06: Correction = Correction - 0.1; break;
     default:break;
@@ -525,6 +526,30 @@ void UserComunication()
         default:    break;
         }
     }
+}
+
+void SetAlsaMasterVolume(long volume)
+{
+    long min, max;
+    snd_mixer_t *handle;
+    snd_mixer_selem_id_t *sid;
+    const char *card = "default";
+    const char *selem_name = "Master";
+
+    snd_mixer_open(&handle, 0);
+    snd_mixer_attach(handle, card);
+    snd_mixer_selem_register(handle, NULL, NULL);
+    snd_mixer_load(handle);
+
+    snd_mixer_selem_id_alloca(&sid);
+    snd_mixer_selem_id_set_index(sid, 0);
+    snd_mixer_selem_id_set_name(sid, selem_name);
+    snd_mixer_elem_t* elem = snd_mixer_find_selem(handle, sid);
+
+    snd_mixer_selem_get_playback_volume_range(elem, &min, &max);
+    snd_mixer_selem_set_playback_volume_all(elem, volume * max / 100);
+
+    snd_mixer_close(handle);
 }
 
 void MySerialEvent(uchar c)
@@ -977,6 +1002,8 @@ void init()
             piThreadCreate (&mainThread) ;
         }
     }
+
+    SetAlsaMasterVolume(100);
 
     exec("aplay r2d2.wav");
     speakEnglishRobot("press start to run robot");
