@@ -8,6 +8,7 @@ sudo apt-get install build-essential <br />
 sudo apt-get install alsa <br />
 sudo apt-get install qt4-default <br />
 sudo apt-get install espeak <br />
+sudo apt-get install libasound2-dev <br />
 
 Building code: <br />
 cd BalanceRobotPi <br />
