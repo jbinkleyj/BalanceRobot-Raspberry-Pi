@@ -534,7 +534,7 @@ void SetAlsaMasterVolume(long volume)
     snd_mixer_t *handle;
     snd_mixer_selem_id_t *sid;
     const char *card = "default";
-    const char *selem_name = "Master";
+    const char *selem_name = "PCM";
 
     snd_mixer_open(&handle, 0);
     snd_mixer_attach(handle, card);
