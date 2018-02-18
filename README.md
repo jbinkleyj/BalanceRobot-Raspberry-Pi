@@ -56,7 +56,7 @@ https://www.waveshare.com/wiki/RPi_Motor_Driver_Board<br />
 <br />
 Video:https://vimeo.com/243418683
 
-https://www.youtube.com/watch?v=WB55xWTzZrw
+https://youtu.be/immSrXEHzQE
 
 AutoStart the app on boot:<br />
 
