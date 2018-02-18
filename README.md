@@ -54,9 +54,10 @@ https://www.waveshare.com/wiki/RPi_Motor_Driver_Board<br />
 #define SPD_INT_R 18   //interrupt L Phys:18 B<br />
 #define SPD_PUL_R 22   //Phys:22<br />
 <br />
-Video:https://vimeo.com/243418683
-
+Video:
 https://youtu.be/immSrXEHzQE
+
+https://vimeo.com/243418683
 
 AutoStart the app on boot:<br />
 
