@@ -13,7 +13,6 @@ sudo apt-get install libasound2-dev <br />
 Building code: <br />
 cd BalanceRobotPi <br />
 qmake, make <br />
-
 in BalanceRobotPi/main.cpp, plaese change the mac address to your android phone mac address
 std::string RfCommAndroidMac = "XX:XX:XX:XX:XX:XX";// change it with your phone mac
 
