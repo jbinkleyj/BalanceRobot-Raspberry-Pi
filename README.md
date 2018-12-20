@@ -7,7 +7,7 @@ Please install build-essential, alsa , qmake and espeak before compile.<br />
 sudo apt-get update <br />
 sudo apt-get install build-essential <br />
 sudo apt-get install alsa-utils <br />
-sudo apt-get install qt4-default <br />
+sudo apt-get install qt5-default <br />
 sudo apt-get install espeak <br />
 sudo apt-get install libasound2-dev <br />
 sudo apt-get install libbluetooth-dev <br />
