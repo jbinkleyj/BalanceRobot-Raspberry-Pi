@@ -27,7 +27,7 @@ qmake, make <br />
 in BalanceRobotPi/main.cpp, plaese change the mac address to your android phone mac address
 std::string RfCommAndroidMac = "XX:XX:XX:XX:XX:XX";// change it with your phone mac
 
-BalanceRobot Interface:
+<b>BalanceRobot Interface:</b>
 
 Remote module written in android studio java ,<br />
 for controlling robot via Rfcomm serial bluetooth connection.<br />
@@ -38,7 +38,7 @@ to power dc motors<br />or set m_IsRunning variable to thing you want true or fa
 
 For autostart the app on raspberry boot please read below instructions. <br />
 
-The Balance Robot parts are:
+<b>The Balance Robot parts are:</b>
 
 18650 battery holder,
 
@@ -112,7 +112,7 @@ sudo systemctl enable startrobot.service<br />
 Reboot the Pi and your custom service should run:<br />
 sudo reboot<br />
 <br />
-Calibrating your PID Controller
+<b>Calibrating your PID Controller</b>
 
 Set all PID constants to zero. This is as good a place to start as any… Slowly increase the P-constant value. While you are doing this, hold the robot to make sure it doesn’t fall over and smash into a million pieces! You should increase the P-constant until the robot responds quickly to any tilting, and then just makes the robot overshoot in the other direction. Now increase the I-constant. This component is a bit tricky to get right. You should keep this relatively low, as it can accumulate errors very quickly. In theory, the robot should be able to stabilise with only the P and I constants set, but will oscillate a lot and ultimately fall over. Raise the D-constant. The derivative components works against any motion, so it helps to dampen any oscillations and reduce overshooting.
 
