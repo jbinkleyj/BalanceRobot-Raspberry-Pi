@@ -13,12 +13,21 @@ sudo apt-get install libasound2-dev <br />
 sudo apt-get install libbluetooth-dev <br />
 sudo apt-get install bluetooth blueman bluez python-gobject python-gobject-2 <br />
 sudo apt-get install -y libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev <br />
+sudo apt-get install i2c-tools <br />
+
+Enable the I2C protocol feature in raspberry pi:
+
+sudo raspi-config
+Enable the I2C
+Reboot your system
 
 Building code: <br />
 cd BalanceRobotPi <br />
 qmake, make <br />
 in BalanceRobotPi/main.cpp, plaese change the mac address to your android phone mac address
 std::string RfCommAndroidMac = "XX:XX:XX:XX:XX:XX";// change it with your phone mac
+
+BalanceRobot Interface:
 
 Remote module written in android studio java ,<br />
 for controlling robot via Rfcomm serial bluetooth connection.<br />
